@@ -31,6 +31,7 @@ import androidx.core.content.edit
 import com.example.trackmate.services.*
 import okhttp3.Cache
 import okhttp3.Interceptor
+import androidx.appcompat.app.AppCompatDelegate
 
 class SessionCookieJar(context: Context) : CookieJar {
     private val masterKey = MasterKey.Builder(context)
@@ -144,6 +145,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
 
         val navView: BottomNavigationView = binding.navView
         val navController = findNavController(R.id.nav_host_fragment_activity_main)
