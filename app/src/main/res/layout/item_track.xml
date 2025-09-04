@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="8dp">
+
+    <TextView
+        android:id="@+id/txtTrackName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Track Name"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btnEdit" />
+
+    <Button
+        android:id="@+id/btnDelete"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Delete"
+        android:layout_marginRight="5dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btnEdit"
+        android:backgroundTint="@color/cardview_light_background"
+        style="?attr/materialButtonOutlinedStyle"/>
+
+    <Button
+        android:id="@+id/btnEdit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Edit"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btnRenavigate" />
+
+    <ImageButton
+        android:id="@+id/btnRenavigate"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:backgroundTint="@color/primary_700"
+        android:contentDescription="Renavigate"
+        android:padding="8dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/baseline_navigation_24_white"
+    app:layout_constraintTop_toTopOf="parent"
+    app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/txtBestTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Best Time: 00:00"
+        app:layout_constraintTop_toBottomOf="@id/txtTrackName"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/txtMaxSpeed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Max Speed: 00 km/h"
+        app:layout_constraintTop_toBottomOf="@id/txtBestTime"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/txtBestAvgSpeed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Best Avg Speed: 00 km/h"
+        app:layout_constraintTop_toBottomOf="@id/txtMaxSpeed"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

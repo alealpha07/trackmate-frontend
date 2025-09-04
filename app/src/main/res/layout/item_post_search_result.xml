@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="12dp">
+
+    <TextView
+        android:id="@+id/postTitleText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Post Title"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toStartOf="@+id/openPostButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="Title" />
+
+    <Button
+        android:id="@+id/openPostButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="View Post"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageView
+        android:id="@+id/postImage"
+        android:contentDescription="Post Picture"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_marginTop="8dp"
+        android:scaleType="centerCrop"
+        android:background="@color/material_dynamic_neutral90"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/postTitleText"/>
+
+    <ImageView
+        android:id="@+id/userImage"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="15dp"
+        android:src="@drawable/baseline_person_24"
+        app:layout_constraintStart_toEndOf="@+id/postImage"
+        app:layout_constraintTop_toTopOf="@+id/postImage" />
+
+    <TextView
+        android:id="@+id/username"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:text="Username"
+        android:textSize="14sp"
+        app:layout_constraintStart_toEndOf="@+id/userImage"
+        app:layout_constraintTop_toTopOf="@+id/userImage"
+        app:layout_constraintBottom_toBottomOf="@+id/userImage"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:text="This is the User's Name" />
+
+    <TextView
+        android:id="@+id/likeCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="4dp"
+        android:text="100 Likes"
+        android:textSize="12sp"
+        app:layout_constraintStart_toEndOf="@+id/postImage"
+        app:layout_constraintTop_toBottomOf="@+id/username"
+        tools:text="100 Likes" />
+
+    <TextView
+        android:id="@+id/description"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="4dp"
+        android:text="Post description..."
+        android:textSize="12sp"
+        android:maxLines="3"
+        android:ellipsize="end"
+        app:layout_constraintStart_toEndOf="@+id/postImage"
+        app:layout_constraintTop_toBottomOf="@+id/likeCount"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:text="This is a brief description of the post content that can span across multiple lines and get truncated with an ellipsis if it's too long." />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
