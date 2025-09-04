@@ -130,8 +130,8 @@ class TravelGraph : Fragment() {
                         withContext(Dispatchers.Main) {
                             setupTimeLineChart(lineChart, travels.sortedBy { travel ->
                                 formatter.parse(travel.dateTimeString)
-                            })
-                            setupAverageSpeedBarChart(barChart, travels, userId)
+                            }.filter{ it.userId == userId})
+                            setupSpeedComparisonBarChart(barChart, travels, userId)
                         }
                     }
                 }
@@ -141,49 +141,46 @@ class TravelGraph : Fragment() {
         }
     }
 
-    private fun setupAverageSpeedBarChart(chart: BarChart, travels: List<TravelItem>, userId: Int) {
+    private fun setupSpeedComparisonBarChart(chart: BarChart, travels: List<TravelItem>, userId: Int) {
         if (travels.isEmpty()) return
 
+        val userTravels = travels.filter { it.userId == userId }
         val otherTravels = travels.filter { it.userId != userId }
-        val entries = mutableListOf<BarEntry>()
-        val labels = mutableListOf<String>()
 
-        if (otherTravels.isNotEmpty()) {
-            val sortedTravels = otherTravels.sortedBy { it.averageSpeed }
-            val minSpeed = sortedTravels.first().averageSpeed
-            val maxSpeed = sortedTravels.last().averageSpeed
-            val numGroups = 5
-            val binSize = (maxSpeed - minSpeed) / numGroups
-            val groups = IntArray(numGroups) { 0 }
+        val myBestMaxSpeed = userTravels.maxOfOrNull { it.maxSpeed } ?: 0f
+        val globalMaxSpeed = travels.maxOfOrNull { it.maxSpeed } ?: 0f
 
-            sortedTravels.forEach { travel ->
-                val groupIndex =
-                    ((travel.averageSpeed - minSpeed) / binSize).toInt().coerceIn(0, numGroups - 1)
-                groups[groupIndex]++
-            }
+        val myBestAvgSpeed = userTravels.maxOfOrNull { it.averageSpeed } ?: 0f
+        val globalBestAvgSpeed = travels.maxOfOrNull { it.averageSpeed } ?: 0f
 
-            for (i in groups.indices) {
-                entries.add(BarEntry(i.toFloat(), groups[i].toFloat()))
-                labels.add("Group ${i + 1}")
-            }
-        }
+        val entries = listOf(
+            BarEntry(0f, myBestMaxSpeed),
+            BarEntry(1f, globalMaxSpeed),
+            BarEntry(2f, myBestAvgSpeed),
+            BarEntry(3f, globalBestAvgSpeed)
+        )
 
-        val userBest = travels.filter { it.userId == userId }.maxOfOrNull { it.averageSpeed } ?: 0f
-        entries.add(BarEntry(entries.size.toFloat(), userBest))
-        labels.add("You")
+        val labels = listOf(
+            "My Max Speed",
+            "Global Max Speed",
+            "My Avg Speed",
+            "Global Avg Speed"
+        )
 
-        val dataSet = BarDataSet(entries, "Average Speed Groups").apply {
+        val dataSet = BarDataSet(entries, "Speed Comparison").apply {
             colors = ColorTemplate.MATERIAL_COLORS.toList()
             valueTextColor = Color.BLACK
             valueTextSize = 14f
         }
 
         chart.data = BarData(dataSet)
+
         chart.xAxis.apply {
             position = XAxis.XAxisPosition.BOTTOM
             setDrawGridLines(false)
             granularity = 1f
-            textSize = 14f
+            textSize = 12f
+            labelRotationAngle = -20f
             valueFormatter = object : com.github.mikephil.charting.formatter.ValueFormatter() {
                 override fun getFormattedValue(value: Float): String {
                     val index = value.toInt()
@@ -193,8 +190,7 @@ class TravelGraph : Fragment() {
         }
 
         chart.axisLeft.apply {
-            granularity = 1f
-            textSize = 14f
+            textSize = 12f
             valueFormatter = object : com.github.mikephil.charting.formatter.ValueFormatter() {
                 override fun getFormattedValue(value: Float): String {
                     return "${value.toInt()} km/h"
@@ -205,7 +201,7 @@ class TravelGraph : Fragment() {
         chart.axisRight.isEnabled = false
         chart.description.isEnabled = false
         chart.legend.isEnabled = false
-        chart.extraBottomOffset = 20f
+        chart.extraBottomOffset = 40f
 
         chart.animateY(1000)
         chart.invalidate()
