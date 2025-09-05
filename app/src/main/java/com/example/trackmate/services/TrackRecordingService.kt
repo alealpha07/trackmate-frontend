@@ -18,6 +18,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
+import java.util.Locale
 
 @JsonClass(generateAdapter = true)
 data class TrackPoint(
@@ -121,23 +122,6 @@ class TrackRecordingService : Service() {
         )
     }
 
-    private fun saveToJson() {
-        val moshi = Moshi.Builder()
-            .add(KotlinJsonAdapterFactory())
-            .build()
-        val adapter = moshi.adapter(Track::class.java)
-
-        val trackPointsList = pathPoints.map { (location, time) ->
-            TrackPoint(location.latitude, location.longitude, time)
-        }
-
-        val trackData = Track(trackPointsList)
-        val json = adapter.toJson(trackData)
-
-        val file = File(filesDir, "track.json")
-        file.writeText(json)
-    }
-
     private fun saveToJsonAsync() {
         CoroutineScope(Dispatchers.IO).launch {
             val moshi = Moshi.Builder()
@@ -153,7 +137,13 @@ class TrackRecordingService : Service() {
             val json = adapter.toJson(trackData)
 
             val file = File(filesDir, "track.json")
+            if (file.parentFile?.exists() == false) {
+                file.parentFile?.mkdirs()
+            }
             file.writeText(json)
+
+            val intent = Intent("com.example.trackmate.TRACK_FILE_SAVED")
+            LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(intent)
         }
     }
 
@@ -222,12 +212,16 @@ class TrackRecordingService : Service() {
         val avgSpeedKmh = if (durationSec > 0) (distanceMeters / durationSec) * 3.6f else 0f
         val maxSpeedKmh = maxSpeedMps * 3.6f
 
+        fun formatFloat(value: Float): Float {
+            return "%.2f".format(Locale.US, value).toFloat()
+        }
+
         return NewTravelRequest(
             id = -1,
-            time = String.format("%.2f", durationSec).toFloat(),
-            averageSpeed = String.format("%.2f", avgSpeedKmh).toFloat(),
-            maxSpeed = String.format("%.2f", maxSpeedKmh).toFloat(),
-            distance = String.format("%.2f", distanceKm).toFloat()
+            time = formatFloat(durationSec),
+            averageSpeed = formatFloat(avgSpeedKmh),
+            maxSpeed = formatFloat(maxSpeedKmh),
+            distance = formatFloat(distanceKm)
         )
     }
 

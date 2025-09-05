@@ -117,6 +117,23 @@ class Navigate : Fragment(), OnMapReadyCallback {
         }
     }
 
+    private val trackFileSavedReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val dialogView = layoutInflater.inflate(R.layout.dialog_track_name, null)
+            val editText = dialogView.findViewById<EditText>(R.id.editTrackName)
+
+            AlertDialog.Builder(requireContext())
+                .setTitle("Save Track")
+                .setMessage("Do you want to save this track?")
+                .setView(dialogView)
+                .setPositiveButton("Save") { _, _ ->
+                    saveTrack(editText.text.toString())
+                }
+                .setNegativeButton("Discard", null)
+                .show()
+        }
+    }
+
     private fun updatePolyline() {
         if (!::googleMap.isInitialized) return
 
@@ -213,22 +230,6 @@ class Navigate : Fragment(), OnMapReadyCallback {
 
         val intent = Intent(requireContext(), TrackRecordingService::class.java)
         requireContext().stopService(intent)
-
-        val dialogView = layoutInflater.inflate(R.layout.dialog_track_name, null)
-        val editText = dialogView.findViewById<EditText>(R.id.editTrackName)
-
-        AlertDialog.Builder(requireContext())
-            .setTitle("Save Track")
-            .setMessage("Do you want to save this track?")
-            .setView(dialogView)
-            .setPositiveButton("Save") { _, _ ->
-                val trackName = editText.text.toString().trim()
-                if (trackName.isNotEmpty()) {
-                    saveTrack(trackName)
-                }
-            }
-            .setNegativeButton("Discard", null)
-            .show()
     }
 
     private fun saveTrack(trackName: String) {
@@ -256,8 +257,7 @@ class Navigate : Fragment(), OnMapReadyCallback {
                     }
                     Log.d("API-CALL", createResponse.message())
                     return@launch
-                }
-                else{
+                } else {
                     questApi.increaseQuest(
                         IncreaseQuestRequest(
                             QuestType.RECORD_TRACK.toString(),
@@ -321,22 +321,31 @@ class Navigate : Fragment(), OnMapReadyCallback {
             findNavController().navigate(action)
         }
         mapView.onResume()
-        if( TrackRecordingService.isRecording){
+        if (TrackRecordingService.isRecording) {
             val recordedPoints = TrackRecordingService.pathPoints
             if (recordedPoints.isNotEmpty()) {
                 pathPoints.clear()
-                pathPoints.addAll(recordedPoints.map { LatLng(it.first.latitude, it.first.longitude) })
+                pathPoints.addAll(recordedPoints.map {
+                    LatLng(
+                        it.first.latitude,
+                        it.first.longitude
+                    )
+                })
                 updatePolyline()
             }
             btnOpenLibrary.visibility = View.GONE
-        }
-        else{
+        } else {
             btnOpenLibrary.visibility = View.VISIBLE
         }
         LocalBroadcastManager.getInstance(requireContext())
             .registerReceiver(
                 trackUpdateReceiver,
                 IntentFilter("com.example.trackmate.TRACK_UPDATE")
+            )
+        LocalBroadcastManager.getInstance(requireContext())
+            .registerReceiver(
+                trackFileSavedReceiver,
+                IntentFilter("com.example.trackmate.TRACK_FILE_SAVED")
             )
     }
 
@@ -345,6 +354,8 @@ class Navigate : Fragment(), OnMapReadyCallback {
         mapView.onPause()
         LocalBroadcastManager.getInstance(requireContext())
             .unregisterReceiver(trackUpdateReceiver)
+        LocalBroadcastManager.getInstance(requireContext())
+            .unregisterReceiver(trackFileSavedReceiver)
     }
 
     override fun onDestroyView() {
@@ -358,5 +369,4 @@ class Navigate : Fragment(), OnMapReadyCallback {
             mapView.onSaveInstanceState(outState)
         }
     }
-
 }
