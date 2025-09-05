@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.location.Location
 import android.os.Handler
+import android.os.HandlerThread
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
@@ -17,6 +18,9 @@ import com.google.android.gms.location.*
 import com.google.android.gms.maps.model.LatLng
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.File
 import kotlin.math.min
 
@@ -39,6 +43,7 @@ class TrackNavigationService : Service() {
     private var lastNearestIndex = 0
     private var lastOffTrack = false
     private var startTime: Long = 0
+    private lateinit var workerThread: HandlerThread
     private lateinit var updateHandler: Handler
     private lateinit var updateRunnable: Runnable
 
@@ -53,7 +58,10 @@ class TrackNavigationService : Service() {
         super.onCreate()
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        updateHandler = Handler(Looper.getMainLooper())
+        workerThread = HandlerThread("NavServiceThread")
+        workerThread.start()
+        updateHandler = Handler(workerThread.looper)
+
         updateRunnable = object : Runnable {
             override fun run() {
                 navigationPath.lastOrNull()?.let { sendNavigationUpdate(it) }
@@ -66,11 +74,13 @@ class TrackNavigationService : Service() {
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         trackId = intent?.getIntExtra("trackId", -1) ?: -1
-        loadReferenceTrack()
-        startForegroundService()
-        if (referenceTrackPoints.isNotEmpty()) {
-            startLocationUpdates()
-            startTime = System.nanoTime()
+        CoroutineScope(Dispatchers.IO).launch {
+            loadReferenceTrack()
+            if (referenceTrackPoints.isNotEmpty()) {
+                startForegroundService()
+                startLocationUpdates()
+                startTime = System.nanoTime()
+            }
         }
         return START_NOT_STICKY
     }
@@ -87,15 +97,17 @@ class TrackNavigationService : Service() {
                         ?.let { it.latitude == location.latitude && it.longitude == location.longitude } == true
                 ) return
                 navigationPath.add(location)
-                checkNavigationProgress(location)
-                sendNavigationUpdate(location)
+                updateHandler.post {
+                    checkNavigationProgress(location)
+                    sendNavigationUpdate(location)
+                }
             }
         }
 
         fusedLocationClient.requestLocationUpdates(
             request,
             locationCallback!!,
-            Looper.getMainLooper()
+            workerThread.looper
         )
     }
 
@@ -116,7 +128,6 @@ class TrackNavigationService : Service() {
 
         if (distanceToNearest <= POINT_VISIT_THRESHOLD) visitedIndices.add(nearestIdx)
 
-        // Advance targets while within threshold or between points
         while (currentTargetIndex < referenceTrackPoints.size) {
             val target = referenceTrackPoints[currentTargetIndex]
             val next = referenceTrackPoints.getOrNull(currentTargetIndex + 1)
@@ -342,7 +353,10 @@ class TrackNavigationService : Service() {
         isNavigating = false
         trackId = -1
         locationCallback?.let { fusedLocationClient.removeLocationUpdates(it) }
+
         updateHandler.removeCallbacks(updateRunnable)
+        workerThread.quitSafely()
+
         super.onDestroy()
     }
 

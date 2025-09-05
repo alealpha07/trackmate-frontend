@@ -321,8 +321,18 @@ class Navigate : Fragment(), OnMapReadyCallback {
             findNavController().navigate(action)
         }
         mapView.onResume()
-        btnOpenLibrary.visibility =
-            if (TrackRecordingService.isRecording) View.GONE else View.VISIBLE
+        if( TrackRecordingService.isRecording){
+            val recordedPoints = TrackRecordingService.pathPoints
+            if (recordedPoints.isNotEmpty()) {
+                pathPoints.clear()
+                pathPoints.addAll(recordedPoints.map { LatLng(it.first.latitude, it.first.longitude) })
+                updatePolyline()
+            }
+            btnOpenLibrary.visibility = View.GONE
+        }
+        else{
+            btnOpenLibrary.visibility = View.VISIBLE
+        }
         LocalBroadcastManager.getInstance(requireContext())
             .registerReceiver(
                 trackUpdateReceiver,
