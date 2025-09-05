@@ -14,6 +14,9 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.File
 
 @JsonClass(generateAdapter = true)
@@ -32,15 +35,17 @@ class TrackRecordingService : Service() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var locationCallback: LocationCallback? = null
-    private val pathPoints = mutableListOf<Pair<Location, Long>>()
     private lateinit var updateHandler: Handler
     private lateinit var updateRunnable: Runnable
+    private lateinit var updateThread: HandlerThread
     private var startTime: Long = 0
 
     companion object {
         var isRecording = false
         private var lastTravelData: NewTravelRequest? = null
-
+        private val _pathPoints = mutableListOf<Pair<Location, Long>>()
+        val pathPoints: List<Pair<Location, Long>>
+            get() = _pathPoints.toList()
         fun getLastTravelData(): NewTravelRequest? = lastTravelData
     }
 
@@ -52,7 +57,10 @@ class TrackRecordingService : Service() {
         startLocationUpdates()
         startTime = System.nanoTime()
 
-        updateHandler = Handler(Looper.getMainLooper())
+        updateThread = HandlerThread("TrackUpdateThread")
+        updateThread.start()
+        updateHandler = Handler(updateThread.looper)
+
         updateRunnable = object : Runnable {
             override fun run() {
                 sendTrackUpdate()
@@ -102,7 +110,7 @@ class TrackRecordingService : Service() {
                     return
                 }
 
-                pathPoints.add(location to System.currentTimeMillis())
+                _pathPoints.add(location to System.currentTimeMillis())
             }
         }
 
@@ -128,6 +136,25 @@ class TrackRecordingService : Service() {
 
         val file = File(filesDir, "track.json")
         file.writeText(json)
+    }
+
+    private fun saveToJsonAsync() {
+        CoroutineScope(Dispatchers.IO).launch {
+            val moshi = Moshi.Builder()
+                .add(KotlinJsonAdapterFactory())
+                .build()
+            val adapter = moshi.adapter(Track::class.java)
+
+            val trackPointsList = pathPoints.map { (location, time) ->
+                TrackPoint(location.latitude, location.longitude, time)
+            }
+
+            val trackData = Track(trackPointsList)
+            val json = adapter.toJson(trackData)
+
+            val file = File(filesDir, "track.json")
+            file.writeText(json)
+        }
     }
 
     private fun calculateDistanceMeters() =
@@ -160,7 +187,7 @@ class TrackRecordingService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         locationCallback?.let { fusedLocationClient.removeLocationUpdates(it) }
-        saveToJson()
+        saveToJsonAsync()
         updateHandler.removeCallbacks(updateRunnable)
 
         lastTravelData = calculateTravelData()

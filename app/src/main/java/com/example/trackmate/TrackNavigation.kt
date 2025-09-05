@@ -408,11 +408,16 @@ class TrackNavigation : Fragment(), OnMapReadyCallback {
         super.onResume()
         mapView.onResume()
         if (TrackNavigationService.isNavigating) {
-            statsLayout.visibility = View.GONE
-            txtDistance.visibility = View.VISIBLE
-            txtDuration.visibility = View.VISIBLE
-            txtCurrentSpeed.visibility = View.VISIBLE
-            btnRecord.text = "Cancel Navigation"
+            if (args.trackId != TrackNavigationService.trackId){
+                stopNavigation()
+            }
+            else{
+                statsLayout.visibility = View.GONE
+                txtDistance.visibility = View.VISIBLE
+                txtDuration.visibility = View.VISIBLE
+                txtCurrentSpeed.visibility = View.VISIBLE
+                btnRecord.text = "Cancel Navigation"
+            }
         }
         LocalBroadcastManager.getInstance(requireContext()).registerReceiver(
             navigationUpdateReceiver,
@@ -535,7 +540,6 @@ class TrackNavigation : Fragment(), OnMapReadyCallback {
             endNavigation()
             AlertDialog.Builder(requireContext())
                 .setTitle("Navigation Completed")
-                .setMessage("You have completed the track! Well done.")
                 .setPositiveButton("OK", null)
                 .show()
         } else {
