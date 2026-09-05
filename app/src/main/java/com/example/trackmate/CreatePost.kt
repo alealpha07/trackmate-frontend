@@ -16,6 +16,7 @@ import com.example.trackmate.services.PostRequest
 import com.example.trackmate.services.PostService
 import com.example.trackmate.services.TrackItem
 import com.example.trackmate.services.TrackService
+import com.example.trackmate.util.ImageUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -132,23 +133,17 @@ class CreatePost : Fragment() {
                 if (response.isSuccessful && response.body() != null) {
                     val postId = response.body()!!.id
                     for (uri in selectedImages) {
-                        val inputStream = requireContext().contentResolver.openInputStream(uri)!!
-                        val file = File.createTempFile("upload", ".jpg", requireContext().cacheDir)
-                        file.outputStream().use { outputStream ->
-                            inputStream.copyTo(outputStream)
-                        }
-                        val requestFile =
-                            file.asRequestBody("image/${file.extension}".toMediaTypeOrNull())
+                        val file = ImageUtils.compressImage(requireContext(), uri)
+                        val requestFile = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
                         val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
 
                         val uploadResponse = api.uploadPostImage(body, postId)
                         withContext(Dispatchers.Main) {
                             if (!uploadResponse.isSuccessful) {
-                                Toast.makeText(
-                                    requireContext(),
-                                    "Failed to upload an image",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                val errorMsg = uploadResponse.errorBody()?.string()
+                                    ?: "Failed to upload an image"
+                                Log.d("API-ERROR", "Image upload failed (${uploadResponse.code()}): $errorMsg")
+                                Toast.makeText(requireContext(), errorMsg, Toast.LENGTH_SHORT).show()
                             }
                         }
                     }
