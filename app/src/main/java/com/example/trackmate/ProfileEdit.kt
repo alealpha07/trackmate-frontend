@@ -18,6 +18,7 @@ import com.example.trackmate.services.AuthService
 import com.example.trackmate.services.EditProfileRequest
 import com.example.trackmate.services.ProfileService
 import com.example.trackmate.services.UserResponse
+import com.example.trackmate.util.ImageUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -26,7 +27,6 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import retrofit2.Response
-import java.io.File
 
 class ProfileEdit : Fragment() {
     private lateinit var etBio: EditText
@@ -92,9 +92,8 @@ class ProfileEdit : Fragment() {
             apiCallCoroutine.launch {
                 try {
                     if (selectedImageUri != null) {
-                        val file = uriToFile(selectedImageUri!!)
-                        val requestFile =
-                            file.asRequestBody("image/${file.extension}".toMediaTypeOrNull())
+                        val file = ImageUtils.compressImage(requireContext(), selectedImageUri!!)
+                        val requestFile = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
                         val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
 
                         val uploadResponse =
@@ -133,14 +132,5 @@ class ProfileEdit : Fragment() {
         }
 
         return view
-    }
-
-    private fun uriToFile(uri: Uri): File {
-        val inputStream = requireContext().contentResolver.openInputStream(uri)!!
-        val tempFile = File.createTempFile("upload", ".jpg", requireContext().cacheDir)
-        tempFile.outputStream().use { outputStream ->
-            inputStream.copyTo(outputStream)
-        }
-        return tempFile
     }
 }
