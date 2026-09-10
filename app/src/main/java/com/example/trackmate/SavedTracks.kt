@@ -49,10 +49,12 @@ class TrackAdapter(
     override fun onBindViewHolder(holder: TrackViewHolder, position: Int) {
         val track = tracks[position]
         holder.txtName.text = track.name
-        holder.txtBestTime.text = "Best Time: ${formatTime(track.bestTime)}"
-        holder.txtMaxSpeed.text = "Max Speed: ${String.format("%.2f", track.maxSpeed)} km/h"
+        holder.txtBestTime.text =
+            "Best Time: ${track.bestTime?.let { formatTime(it) } ?: "N/A"}"
+        holder.txtMaxSpeed.text =
+            "Max Speed: ${track.maxSpeed?.let { String.format("%.2f", it) } ?: "N/A"} km/h"
         holder.txtBestAvgSpeed.text =
-            "Best Avg Speed: ${String.format("%.2f", track.bestAverageSpeed)} km/h"
+            "Best Avg Speed: ${track.bestAverageSpeed?.let { String.format("%.2f", it) } ?: "N/A"} km/h"
 
         holder.btnEdit.setOnClickListener { onEdit(track) }
         holder.btnDelete.setOnClickListener { onDelete(track) }

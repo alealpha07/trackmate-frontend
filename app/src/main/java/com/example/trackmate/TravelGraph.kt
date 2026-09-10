@@ -103,8 +103,12 @@ class TravelGraph : Fragment() {
                     withContext(Dispatchers.Main) {
                         binding.txtTrackName.text = trackDetails.name
 
-                        val trackLength = trackDetails.overallBest.distance
-                        binding.txtTrackLength.text = "Length: ${"%.2f".format(trackLength)} km"
+                        val trackLength = trackDetails.overallBest?.distance
+                        binding.txtTrackLength.text = if (trackLength != null) {
+                            "Length: ${"%.2f".format(trackLength)} km"
+                        } else {
+                            "Length: N/A"
+                        }
 
                         binding.txtUserTravelCount.text =
                             "Your Travels: ${trackDetails.travelCount}"
