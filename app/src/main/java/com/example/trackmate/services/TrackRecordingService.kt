@@ -48,6 +48,11 @@ class TrackRecordingService : Service() {
         val pathPoints: List<Pair<Location, Long>>
             get() = _pathPoints.toList()
         fun getLastTravelData(): NewTravelRequest? = lastTravelData
+
+        // Needed for more precise maximum speed calculation, need to discard bad quality points
+        private const val MAX_ACCURACY_METERS = 25f
+        private const val MIN_RELIABLE_DT_SECONDS = 1f
+        private const val MAX_PLAUSIBLE_SPEED_MPS = 83f // ~300 km/h
     }
 
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
@@ -111,7 +116,8 @@ class TrackRecordingService : Service() {
                     return
                 }
 
-                _pathPoints.add(location to System.currentTimeMillis())
+                val fixTime = if (location.time > 0) location.time else System.currentTimeMillis()
+                _pathPoints.add(location to fixTime)
             }
         }
 
@@ -198,9 +204,15 @@ class TrackRecordingService : Service() {
             distanceMeters += prev.distanceTo(curr)
 
             val dt = (t2 - t1) / 1000f // seconds
-            if (dt > 0) {
-                val speedMps = prev.distanceTo(curr) / dt
-                if (speedMps > maxSpeedMps) maxSpeedMps = speedMps
+            val accurateEnough = (!prev.hasAccuracy() || prev.accuracy <= MAX_ACCURACY_METERS) &&
+                (!curr.hasAccuracy() || curr.accuracy <= MAX_ACCURACY_METERS)
+            val speedMps = when {
+                curr.hasSpeed() -> curr.speed
+                accurateEnough && dt >= MIN_RELIABLE_DT_SECONDS -> prev.distanceTo(curr) / dt
+                else -> null
+            }
+            if (speedMps != null && speedMps <= MAX_PLAUSIBLE_SPEED_MPS && speedMps > maxSpeedMps) {
+                maxSpeedMps = speedMps
             }
         }
 

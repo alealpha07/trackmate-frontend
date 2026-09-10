@@ -325,12 +325,18 @@ class TrackNavigation : Fragment(), OnMapReadyCallback {
                             txtUserBestAvg.text = "Your Best Avg Speed: ${it.averageSpeed} km/h"
                             txtUserBestSpd.text = "Your Best Speed: ${it.maxSpeed} km/h"
                         }
-                        txtGlobalBest.text =
-                            "Global Best Time: ${formatTime(details.overallBest.time)}"
-                        txtGlobalBestAvg.text =
-                            "Global Best Avg Speed: ${details.overallBest.averageSpeed} km/h"
-                        txtGlobalBestSpd.text =
-                            "Global Best Speed: ${details.overallBest.maxSpeed} km/h"
+                        if (details.overallBest != null) {
+                            txtGlobalBest.text =
+                                "Global Best Time: ${formatTime(details.overallBest.time)}"
+                            txtGlobalBestAvg.text =
+                                "Global Best Avg Speed: ${details.overallBest.averageSpeed} km/h"
+                            txtGlobalBestSpd.text =
+                                "Global Best Speed: ${details.overallBest.maxSpeed} km/h"
+                        } else {
+                            txtGlobalBest.text = "Global Best Time: N/A"
+                            txtGlobalBestAvg.text = "Global Best Avg Speed: N/A"
+                            txtGlobalBestSpd.text = "Global Best Speed: N/A"
+                        }
                     }
                 }
 

@@ -37,9 +37,9 @@ data class NewTravelRequest(
 data class TrackItem(
     val id: Int,
     val name: String,
-    val bestTime: Float,
-    val maxSpeed: Float,
-    val bestAverageSpeed: Float,
+    val bestTime: Float?,
+    val maxSpeed: Float?,
+    val bestAverageSpeed: Float?,
     val travelCount: Int
 )
 
@@ -78,7 +78,7 @@ data class TrackDetails(
     val name: String,
     val travelCount: Int,
     val userBest: TravelStatistics?,
-    val overallBest: TravelStatistics
+    val overallBest: TravelStatistics?
 )
 
 interface TrackService {
