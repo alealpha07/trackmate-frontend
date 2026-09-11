@@ -29,11 +29,6 @@ import com.example.trackmate.services.QuestService
 import com.example.trackmate.services.QuestType
 import com.example.trackmate.services.TrackNavigationService
 import com.example.trackmate.services.TrackRecordingService
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.maps.*
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.Polyline
-import com.google.android.gms.maps.model.PolylineOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -41,22 +36,27 @@ import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Polyline
+import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
+import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.io.File
 
 const val DRAG_RESUME_FOLLOW_TIME: Long = 5000
 
-class Navigate : Fragment(), OnMapReadyCallback {
+class Navigate : Fragment() {
 
     private lateinit var mapView: MapView
     private lateinit var btnRecord: Button
     private lateinit var btnOpenLibrary: Button
-    private lateinit var googleMap: GoogleMap
+    private lateinit var myLocationOverlay: MyLocationNewOverlay
     private lateinit var txtDistance: TextView
     private lateinit var txtDuration: TextView
     private lateinit var txtCurrentSpeed: TextView
     private lateinit var questApi: QuestService
     private var polyline: Polyline? = null
-    private val pathPoints = mutableListOf<LatLng>()
+    private val pathPoints = mutableListOf<GeoPoint>()
     private val apiCallCoroutine = CoroutineScope(Dispatchers.IO)
     private var userIsInteracting = false
     private val handler = Handler(Looper.getMainLooper())
@@ -75,21 +75,19 @@ class Navigate : Fragment(), OnMapReadyCallback {
         }
 
     private fun enableMyLocation() {
-        if (!::googleMap.isInitialized) return
+        if (!::mapView.isInitialized) return
 
         if (ActivityCompat.checkSelfPermission(
                 requireContext(),
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
         ) {
-            googleMap.isMyLocationEnabled = true
-
-            val fusedLocationClient =
-                LocationServices.getFusedLocationProviderClient(requireContext())
-            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                if (location != null) {
-                    val currentLatLng = LatLng(location.latitude, location.longitude)
-                    googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 16f))
+            myLocationOverlay.enableMyLocation()
+            myLocationOverlay.runOnFirstFix {
+                handler.post {
+                    myLocationOverlay.myLocation?.let { location ->
+                        mapView.controller.animateTo(location, 16.0, 1000L)
+                    }
                 }
             }
         }
@@ -110,7 +108,7 @@ class Navigate : Fragment(), OnMapReadyCallback {
             val lng = intent.getDoubleExtra("lng", Double.NaN)
 
             if (!lat.isNaN() && !lng.isNaN()) {
-                val newPoint = LatLng(lat, lng)
+                val newPoint = GeoPoint(lat, lng)
                 pathPoints.add(newPoint)
                 updatePolyline()
             }
@@ -135,32 +133,31 @@ class Navigate : Fragment(), OnMapReadyCallback {
     }
 
     private fun updatePolyline() {
-        if (!::googleMap.isInitialized) return
+        if (!::mapView.isInitialized) return
 
         if (polyline == null) {
-            val polylineOptions = PolylineOptions()
-                .color(
-                    ContextCompat.getColor(
-                        requireContext(),
-                        com.google.android.material.R.color.design_default_color_primary
-                    )
+            polyline = Polyline().apply {
+                outlinePaint.color = ContextCompat.getColor(
+                    requireContext(),
+                    com.google.android.material.R.color.design_default_color_primary
                 )
-                .width(10f)
-                .addAll(pathPoints)
-            polyline = googleMap.addPolyline(polylineOptions)
-        } else {
-            polyline?.points = pathPoints
+                outlinePaint.strokeWidth = 10f
+            }
+            mapView.overlays.add(polyline)
         }
+        polyline?.setPoints(pathPoints)
+        mapView.invalidate()
 
         if (!userIsInteracting && pathPoints.isNotEmpty()) {
-            googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(pathPoints.last(), 18f))
+            mapView.controller.animateTo(pathPoints.last(), 18.0, 1000L)
         }
     }
 
     private fun clearPolyline() {
-        polyline?.remove()
+        polyline?.let { mapView.overlays.remove(it) }
         polyline = null
         pathPoints.clear()
+        if (::mapView.isInitialized) mapView.invalidate()
     }
 
     override fun onCreateView(
@@ -173,8 +170,7 @@ class Navigate : Fragment(), OnMapReadyCallback {
         btnRecord = view.findViewById(R.id.btnRecord)
         btnOpenLibrary = view.findViewById(R.id.btnOpenLibrary)
         txtCurrentSpeed = view.findViewById(R.id.txtCurrentSpeed)
-        mapView.onCreate(savedInstanceState)
-        mapView.getMapAsync(this)
+        setupMap(view)
         btnRecord.text =
             if (TrackRecordingService.isRecording) "Stop Recording" else "Start Recording"
         btnRecord.setOnClickListener {
@@ -188,17 +184,37 @@ class Navigate : Fragment(), OnMapReadyCallback {
         return view
     }
 
-    override fun onMapReady(map: GoogleMap) {
-        googleMap = map
-        googleMap.uiSettings.isZoomControlsEnabled = true
-        googleMap.uiSettings.isMyLocationButtonEnabled = true
+    private fun setupMap(view: View) {
+        mapView.setTileSource(tileSourceFor(getSavedMapStyle(requireContext())))
+        mapView.setMultiTouchControls(true)
+        mapView.controller.setZoom(16.0)
 
-        googleMap.setOnCameraMoveStartedListener { reason ->
-            if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE) {
-                userIsInteracting = true
-                handler.removeCallbacks(resumeFollowRunnable)
-                handler.postDelayed(resumeFollowRunnable, DRAG_RESUME_FOLLOW_TIME)
+        mapView.overlays.add(buildCopyrightOverlay(requireContext()))
+
+        myLocationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(requireContext()), mapView)
+        mapView.overlays.add(myLocationOverlay)
+
+        setupMapControls(
+            fragment = this,
+            mapView = mapView,
+            myLocationOverlay = myLocationOverlay,
+            btnLayers = view.findViewById(R.id.btnLayers),
+            btnMyLocation = view.findViewById(R.id.btnMyLocation),
+            btnZoomIn = view.findViewById(R.id.btnZoomIn),
+            btnZoomOut = view.findViewById(R.id.btnZoomOut)
+        )
+
+        mapView.setOnTouchListener { _, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    userIsInteracting = true
+                    handler.removeCallbacks(resumeFollowRunnable)
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    handler.postDelayed(resumeFollowRunnable, DRAG_RESUME_FOLLOW_TIME)
+                }
             }
+            false
         }
 
         if (ContextCompat.checkSelfPermission(
@@ -326,7 +342,7 @@ class Navigate : Fragment(), OnMapReadyCallback {
             if (recordedPoints.isNotEmpty()) {
                 pathPoints.clear()
                 pathPoints.addAll(recordedPoints.map {
-                    LatLng(
+                    GeoPoint(
                         it.first.latitude,
                         it.first.longitude
                     )
@@ -360,13 +376,6 @@ class Navigate : Fragment(), OnMapReadyCallback {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        mapView.onDestroy()
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        if (this::mapView.isInitialized) {
-            mapView.onSaveInstanceState(outState)
-        }
+        mapView.onDetach()
     }
 }

@@ -4,14 +4,12 @@ import android.Manifest
 import android.app.AlertDialog
 import android.content.*
 import android.content.pm.PackageManager
-import android.graphics.Canvas
 import android.os.*
 import android.util.Log
 import android.view.*
 import android.widget.*
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.graphics.createBitmap
 import androidx.fragment.app.Fragment
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.fragment.navArgs
@@ -19,9 +17,14 @@ import com.example.trackmate.services.*
 import com.google.android.gms.location.LocationServices
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.navigation.fragment.findNavController
-import com.google.android.gms.maps.*
-import com.google.android.gms.maps.model.*
 import kotlinx.coroutines.*
+import org.osmdroid.util.BoundingBox
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.Polyline
+import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
+import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.io.File
 import java.io.FileOutputStream
 
@@ -33,10 +36,10 @@ fun formatTime(seconds: Float): String {
     return "%02d:%02d:%02d".format(hours, minutes, secs)
 }
 
-class TrackNavigation : Fragment(), OnMapReadyCallback {
+class TrackNavigation : Fragment() {
 
     private lateinit var mapView: MapView
-    private lateinit var googleMap: GoogleMap
+    private lateinit var myLocationOverlay: MyLocationNewOverlay
     private lateinit var btnRecord: Button
     private lateinit var txtDistance: TextView
     private lateinit var txtDuration: TextView
@@ -55,8 +58,8 @@ class TrackNavigation : Fragment(), OnMapReadyCallback {
     private var polyline: Polyline? = null
     private var referencePolyline: Polyline? = null
     private var passedPolyline: Polyline? = null
-    private val pathPoints = mutableListOf<LatLng>()
-    private val referencePoints = mutableListOf<LatLng>()
+    private val pathPoints = mutableListOf<GeoPoint>()
+    private val referencePoints = mutableListOf<GeoPoint>()
 
     private var offTrackDialog: AlertDialog? = null
     private var offTrackShown = false
@@ -83,29 +86,18 @@ class TrackNavigation : Fragment(), OnMapReadyCallback {
         }
 
     private fun enableMyLocation() {
-        if (!::googleMap.isInitialized) return
+        if (!::mapView.isInitialized) return
 
         if (ActivityCompat.checkSelfPermission(
                 requireContext(),
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
         ) {
-            googleMap.isMyLocationEnabled = true
-
-            val fusedLocationClient =
-                LocationServices.getFusedLocationProviderClient(requireContext())
-            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                location?.let {
-                    googleMap.moveCamera(
-                        CameraUpdateFactory.newLatLngZoom(
-                            LatLng(
-                                it.latitude,
-                                it.longitude
-                            ), 16f
-                        )
-                    )
-                }
-            }
+            // Only shows the current-location dot; the camera is driven by the track
+            // preview (bounding box fit) and, once started, by updatePolyline's chase
+            // camera. Auto-centering here would yank the view away from the track
+            // preview to wherever the user currently is, which isn't relevant yet.
+            myLocationOverlay.enableMyLocation()
         }
     }
 
@@ -115,7 +107,7 @@ class TrackNavigation : Fragment(), OnMapReadyCallback {
         return (from + diff * t + 360f) % 360f
     }
 
-    private fun computeOffset(from: LatLng, bearingDeg: Double, distanceMeters: Double): LatLng {
+    private fun computeOffset(from: GeoPoint, bearingDeg: Double, distanceMeters: Double): GeoPoint {
         val R = 6371000.0
         val bearingRad = Math.toRadians(bearingDeg)
         val lat1 = Math.toRadians(from.latitude)
@@ -129,7 +121,7 @@ class TrackNavigation : Fragment(), OnMapReadyCallback {
             Math.sin(bearingRad) * Math.sin(angDist) * Math.cos(lat1),
             Math.cos(angDist) - Math.sin(lat1) * Math.sin(lat2)
         )
-        return LatLng(Math.toDegrees(lat2), Math.toDegrees(lon2))
+        return GeoPoint(Math.toDegrees(lat2), Math.toDegrees(lon2))
     }
 
     private val navigationUpdateReceiver = object : BroadcastReceiver() {
@@ -151,7 +143,7 @@ class TrackNavigation : Fragment(), OnMapReadyCallback {
             txtDuration.text = "Duration: ${formatTime((duration / 1000).toFloat())}"
 
             if (!lat.isNaN() && !lng.isNaN()) {
-                val newPoint = LatLng(lat, lng)
+                val newPoint = GeoPoint(lat, lng)
                 pathPoints.add(newPoint)
 
                 val bearing = if (!nextLat.isNaN() && !nextLng.isNaN()) {
@@ -169,7 +161,8 @@ class TrackNavigation : Fragment(), OnMapReadyCallback {
 
             if (nearestIndex >= 0 && referencePoints.isNotEmpty()) {
                 val clampedIndex = nearestIndex.coerceAtMost(referencePoints.size - 1)
-                passedPolyline?.points = referencePoints.subList(0, clampedIndex + 1)
+                passedPolyline?.setPoints(referencePoints.subList(0, clampedIndex + 1))
+                mapView.invalidate()
             }
 
             if (offTrack && !offTrackShown) {
@@ -200,17 +193,17 @@ class TrackNavigation : Fragment(), OnMapReadyCallback {
         offTrackDialog = null
     }
 
-    private fun updatePolyline(currentPoint: LatLng, bearing: Float) {
-        if (!::googleMap.isInitialized) return
+    private fun updatePolyline(currentPoint: GeoPoint, bearing: Float) {
+        if (!::mapView.isInitialized) return
 
         if (polyline == null) {
-            polyline = googleMap.addPolyline(
-                PolylineOptions()
-                    .color(ContextCompat.getColor(requireContext(), R.color.primary_500))
-                    .width(10f)
-                    .addAll(pathPoints)
-            )
-        } else polyline?.points = pathPoints
+            polyline = Polyline().apply {
+                outlinePaint.color = ContextCompat.getColor(requireContext(), R.color.primary_500)
+                outlinePaint.strokeWidth = 10f
+            }
+            mapView.overlays.add(polyline)
+        }
+        polyline?.setPoints(pathPoints)
 
         if (!hasSmoothedBearing) {
             smoothedBearing = bearing
@@ -219,21 +212,17 @@ class TrackNavigation : Fragment(), OnMapReadyCallback {
 
         if (!userIsInteracting) {
             val cameraTarget = computeOffset(currentPoint, smoothedBearing.toDouble(), 30.0)
-            val currentZoom = googleMap.cameraPosition?.zoom ?: 18f
-            val cameraPosition = CameraPosition.Builder()
-                .target(cameraTarget)
-                .zoom(currentZoom)
-                .bearing(smoothedBearing)
-                .tilt(45f)
-                .build()
-            googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition))
+            mapView.mapOrientation = -smoothedBearing
+            mapView.controller.animateTo(cameraTarget)
         }
+        mapView.invalidate()
     }
 
     private fun clearPolyline() {
-        polyline?.remove()
+        polyline?.let { mapView.overlays.remove(it) }
         polyline = null
         pathPoints.clear()
+        if (::mapView.isInitialized) mapView.invalidate()
     }
 
     override fun onCreateView(
@@ -259,8 +248,7 @@ class TrackNavigation : Fragment(), OnMapReadyCallback {
         txtCurrentSpeed = view.findViewById(R.id.txtCurrentSpeed)
         btnMoreDetails = view.findViewById(R.id.btnMoreDetails)
 
-        mapView.onCreate(savedInstanceState)
-        mapView.getMapAsync(this)
+        setupMap(view)
 
         btnRecord.text =
             if (TrackNavigationService.isNavigating) "Cancel Navigation" else "Start Navigation"
@@ -274,17 +262,37 @@ class TrackNavigation : Fragment(), OnMapReadyCallback {
         return view
     }
 
-    override fun onMapReady(map: GoogleMap) {
-        googleMap = map
-        googleMap.uiSettings.isZoomControlsEnabled = true
-        googleMap.uiSettings.isMyLocationButtonEnabled = true
+    private fun setupMap(view: View) {
+        mapView.setTileSource(tileSourceFor(getSavedMapStyle(requireContext())))
+        mapView.setMultiTouchControls(true)
+        mapView.controller.setZoom(16.0)
 
-        googleMap.setOnCameraMoveStartedListener { reason ->
-            if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE) {
-                userIsInteracting = true
-                handler.removeCallbacks(resumeFollowRunnable)
-                handler.postDelayed(resumeFollowRunnable, DRAG_RESUME_FOLLOW_TIME)
+        mapView.overlays.add(buildCopyrightOverlay(requireContext()))
+
+        myLocationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(requireContext()), mapView)
+        mapView.overlays.add(myLocationOverlay)
+
+        setupMapControls(
+            fragment = this,
+            mapView = mapView,
+            myLocationOverlay = myLocationOverlay,
+            btnLayers = view.findViewById(R.id.btnLayers),
+            btnMyLocation = view.findViewById(R.id.btnMyLocation),
+            btnZoomIn = view.findViewById(R.id.btnZoomIn),
+            btnZoomOut = view.findViewById(R.id.btnZoomOut)
+        )
+
+        mapView.setOnTouchListener { _, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    userIsInteracting = true
+                    handler.removeCallbacks(resumeFollowRunnable)
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    handler.postDelayed(resumeFollowRunnable, DRAG_RESUME_FOLLOW_TIME)
+                }
             }
+            false
         }
 
         if (ContextCompat.checkSelfPermission(
@@ -341,7 +349,7 @@ class TrackNavigation : Fragment(), OnMapReadyCallback {
                 }
 
                 track?.let { t ->
-                    val points = t.track.map { LatLng(it.latitude, it.longitude) }
+                    val points = t.track.map { GeoPoint(it.latitude, it.longitude) }
                     if (points.isNotEmpty()) {
                         withContext(Dispatchers.Main) { setupTrackOnMap(points) }
                     }
@@ -353,46 +361,47 @@ class TrackNavigation : Fragment(), OnMapReadyCallback {
         }
     }
 
-    private fun setupTrackOnMap(points: List<LatLng>) {
+    private fun setupTrackOnMap(points: List<GeoPoint>) {
         referencePoints.clear()
         referencePoints.addAll(points)
 
-        referencePolyline?.remove()
-        referencePolyline = googleMap.addPolyline(
-            PolylineOptions().addAll(points).color(
-                ContextCompat.getColor(
-                    requireContext(),
-                    com.google.android.material.R.color.design_default_color_primary
-                )
-            ).width(8f)
-        )
+        referencePolyline?.let { mapView.overlays.remove(it) }
+        referencePolyline = Polyline().apply {
+            setPoints(points)
+            outlinePaint.color = ContextCompat.getColor(
+                requireContext(),
+                com.google.android.material.R.color.design_default_color_primary
+            )
+            outlinePaint.strokeWidth = 8f
+        }
+        mapView.overlays.add(referencePolyline)
 
-        passedPolyline?.remove()
-        passedPolyline = googleMap.addPolyline(
-            PolylineOptions().addAll(emptyList())
-                .color(ContextCompat.getColor(requireContext(), android.R.color.darker_gray))
-                .width(10f)
-        )
+        passedPolyline?.let { mapView.overlays.remove(it) }
+        passedPolyline = Polyline().apply {
+            setPoints(emptyList())
+            outlinePaint.color = ContextCompat.getColor(requireContext(), android.R.color.darker_gray)
+            outlinePaint.strokeWidth = 10f
+        }
+        mapView.overlays.add(passedPolyline)
 
-        val startMarkerDrawable =
-            ContextCompat.getDrawable(requireContext(), R.drawable.circle_marker)!!
-        val bitmap = createBitmap(64, 64)
-        val canvas = Canvas(bitmap)
-        startMarkerDrawable.setBounds(0, 0, canvas.width, canvas.height)
-        startMarkerDrawable.draw(canvas)
+        val startMarker = Marker(mapView).apply {
+            position = points.first()
+            title = "Start"
+            icon = createLetterMarkerIcon(requireContext(), 'A')
+            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+        }
+        mapView.overlays.add(startMarker)
 
-        googleMap.addMarker(
-            MarkerOptions().position(points.first()).title("Start")
-                .icon(BitmapDescriptorFactory.fromBitmap(bitmap)).anchor(0.5f, 0.5f)
-        )
-        googleMap.addMarker(
-            MarkerOptions().position(points.last()).title("Finish")
-                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET))
-        )
+        val finishMarker = Marker(mapView).apply {
+            position = points.last()
+            title = "Finish"
+            icon = createLetterMarkerIcon(requireContext(), 'B')
+            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+        }
+        mapView.overlays.add(finishMarker)
 
-        val builder = LatLngBounds.Builder()
-        points.forEach { builder.include(it) }
-        googleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 100))
+        mapView.zoomToBoundingBox(BoundingBox.fromGeoPoints(points), false, 100)
+        mapView.invalidate()
 
         var distance = 0.0
         for (i in 0 until points.size - 1) {
@@ -440,12 +449,7 @@ class TrackNavigation : Fragment(), OnMapReadyCallback {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        mapView.onDestroy()
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        if (::mapView.isInitialized) mapView.onSaveInstanceState(outState)
+        mapView.onDetach()
     }
 
     private fun startNavigation() {

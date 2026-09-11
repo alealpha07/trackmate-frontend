@@ -8,7 +8,7 @@
     tools:context=".TrackNavigation"
     android:paddingBottom="50dp">
 
-    <com.google.android.gms.maps.MapView
+    <org.osmdroid.views.MapView
         android:id="@+id/mapView"
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -53,6 +53,61 @@
         app:layout_constraintTop_toBottomOf="@id/txtDuration"
         android:text="Speed: 0 km/h"
         android:textSize="20sp"/>
+
+    <LinearLayout
+        android:id="@+id/mapControls"
+        android:orientation="vertical"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnLayers"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:contentDescription="Change map style"
+            app:fabSize="mini"
+            app:srcCompat="@drawable/ic_layers_24"
+            app:tint="@android:color/black"
+            app:backgroundTint="@android:color/white" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnMyLocation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:contentDescription="Center on my location"
+            app:fabSize="mini"
+            app:srcCompat="@drawable/ic_my_location_24"
+            app:tint="@android:color/black"
+            app:backgroundTint="@android:color/white" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnZoomIn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="2dp"
+            android:contentDescription="Zoom in"
+            app:fabSize="mini"
+            app:srcCompat="@drawable/ic_add_24"
+            app:tint="@android:color/black"
+            app:backgroundTint="@android:color/white" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnZoomOut"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="Zoom out"
+            app:fabSize="mini"
+            app:srcCompat="@drawable/ic_remove_24"
+            app:tint="@android:color/black"
+            app:backgroundTint="@android:color/white" />
+
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/statsLayout"

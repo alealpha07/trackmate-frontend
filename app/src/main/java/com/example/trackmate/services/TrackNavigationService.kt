@@ -15,7 +15,7 @@ import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.example.trackmate.R
 import com.google.android.gms.location.*
-import com.google.android.gms.maps.model.LatLng
+import org.osmdroid.util.GeoPoint
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.CoroutineScope
@@ -35,7 +35,7 @@ class TrackNavigationService : Service() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var locationCallback: LocationCallback? = null
     private val navigationPath = mutableListOf<Location>()
-    private val referenceTrackPoints = mutableListOf<LatLng>()
+    private val referenceTrackPoints = mutableListOf<GeoPoint>()
     private val visitedIndices = mutableSetOf<Int>()
 
     private var currentTargetIndex = 1
@@ -158,8 +158,8 @@ class TrackNavigationService : Service() {
 
     private fun isBetweenPoints(
         user: Location,
-        start: LatLng,
-        end: LatLng,
+        start: GeoPoint,
+        end: GeoPoint,
         margin: Double = IS_BETWEEN_POINTS_THRESHOLD,
         maxDistance: Float = POINT_VISIT_THRESHOLD
     ): Boolean {
@@ -188,7 +188,7 @@ class TrackNavigationService : Service() {
             val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
             val track = moshi.adapter(Track::class.java).fromJson(file.readText()) ?: return
             referenceTrackPoints.clear()
-            referenceTrackPoints.addAll(track.track.map { LatLng(it.latitude, it.longitude) })
+            referenceTrackPoints.addAll(track.track.map { GeoPoint(it.latitude, it.longitude) })
 
             referenceTrackLengthMeters = referenceTrackPoints.windowed(2).sumOf {
                 val startPoint = it[0]

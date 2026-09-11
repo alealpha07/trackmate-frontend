@@ -22,7 +22,9 @@ Before building the project, make sure you have the following installed:
 - **Android Studio** (latest version recommended)  
 - **Android SDK >= 35**  
 - **Gradle** (bundled with Android Studio is fine)  
-- A valid **Google Maps API Key**  
+- A valid **Stadia Maps API Key**  
+
+Maps are powered by [OpenStreetMap](https://www.openstreetmap.org/) data, rendered via [Stadia Maps](https://stadiamaps.com/) and displayed with [osmdroid](https://github.com/osmdroid/osmdroid). Stadia Maps' free tier covers 200,000 tile loads/month and is free forever for non-commercial use.
 
 ---
 
@@ -36,11 +38,12 @@ Before building the project, make sure you have the following installed:
 
 2. **Configure API Key:**
 
+   * Create a free account and API key at [client.stadiamaps.com](https://client.stadiamaps.com/signup/)
    * Copy the file `example.gradle.properties` to a new file named `gradle.properties`
-   * Open `gradle.properties` and replace the placeholder value with your actual Google Maps API key:
+   * Open `gradle.properties` and replace the placeholder value with your actual Stadia Maps API key:
 
      ```properties
-     MAPS_API_KEY=your_actual_api_key_here
+     STADIA_MAPS_API_KEY=your_actual_api_key_here
      ```
 
 3. **Build the Project:**
