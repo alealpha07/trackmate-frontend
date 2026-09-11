@@ -15,16 +15,19 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
-        manifestPlaceholders["mapsApiKey"] = project.findProperty("MAPS_API_KEY") as String
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+
+    val stadiaMapsApiKey = (project.findProperty("STADIA_MAPS_API_KEY") as? String) ?: ""
 
     buildTypes {
         debug { // TODO "\"http://10.0.2.2:3000\""
             buildConfigField("String", "BASE_URL", "\"https://backend.trackmate.alpha-hub.net\"")
+            buildConfigField("String", "STADIA_MAPS_API_KEY", "\"$stadiaMapsApiKey\"")
         }
         release {
             buildConfigField("String", "BASE_URL", "\"https://backend.trackmate.alpha-hub.net\"")
+            buildConfigField("String", "STADIA_MAPS_API_KEY", "\"$stadiaMapsApiKey\"")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -56,7 +59,7 @@ dependencies {
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
     implementation(libs.androidx.annotation)
-    implementation(libs.play.services.maps)
+    implementation(libs.osmdroid.android)
     implementation(libs.play.services.location)
     implementation(libs.androidx.media3.common.ktx)
     testImplementation(libs.junit)

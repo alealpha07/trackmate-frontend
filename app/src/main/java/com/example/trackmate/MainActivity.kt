@@ -32,6 +32,7 @@ import com.example.trackmate.services.*
 import okhttp3.Cache
 import okhttp3.Interceptor
 import androidx.appcompat.app.AppCompatDelegate
+import java.io.File
 
 class SessionCookieJar(context: Context) : CookieJar {
     private val masterKey = MasterKey.Builder(context)
@@ -104,6 +105,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        org.osmdroid.config.Configuration.getInstance().apply {
+            userAgentValue = packageName
+            osmdroidBasePath = File(cacheDir, "osmdroid")
+            osmdroidTileCache = File(osmdroidBasePath, "tiles")
+        }
 
         cookieJar = SessionCookieJar(baseContext)
 
