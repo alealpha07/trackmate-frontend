@@ -270,6 +270,7 @@ class TrackNavigation : Fragment() {
         mapView.overlays.add(buildCopyrightOverlay(requireContext()))
 
         myLocationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(requireContext()), mapView)
+        applyPrimaryLocationIcons(requireContext(), myLocationOverlay)
         mapView.overlays.add(myLocationOverlay)
 
         setupMapControls(

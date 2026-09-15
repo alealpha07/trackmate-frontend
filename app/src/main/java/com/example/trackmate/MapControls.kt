@@ -4,6 +4,7 @@ import android.app.AlertDialog
 import android.view.View
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
@@ -17,6 +18,10 @@ fun setupMapControls(
     btnZoomOut: View
 ) {
     val context = fragment.requireContext()
+
+    // We provide our own zoom buttons (top right), so hide osmdroid's built-in
+    // on-screen zoom controls that otherwise pop up at the bottom on touch/zoom.
+    mapView.zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
 
     btnLayers.setOnClickListener {
         val styles = MapStyle.entries.toTypedArray()
