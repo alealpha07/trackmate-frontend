@@ -248,6 +248,9 @@ class TrackNavigation : Fragment() {
         txtCurrentSpeed = view.findViewById(R.id.txtCurrentSpeed)
         btnMoreDetails = view.findViewById(R.id.btnMoreDetails)
 
+        api = (requireActivity() as MainActivity).trackService
+        questApi = (requireActivity() as MainActivity).questService
+
         setupMap(view)
 
         btnRecord.text =
@@ -257,8 +260,6 @@ class TrackNavigation : Fragment() {
             val action = TrackNavigationDirections.actionTrackNavigationToTravelGraph(args.trackId)
             findNavController().navigate(action)
         }
-        api = (requireActivity() as MainActivity).trackService
-        questApi = (requireActivity() as MainActivity).questService
         return view
     }
 
