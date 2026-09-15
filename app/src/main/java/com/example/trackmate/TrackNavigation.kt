@@ -46,11 +46,8 @@ class TrackNavigation : Fragment() {
     private lateinit var txtTrackName: TextView
     private lateinit var txtTrackLength: TextView
     private lateinit var txtUserBest: TextView
-    private lateinit var txtGlobalBest: TextView
     private lateinit var txtUserBestAvg: TextView
-    private lateinit var txtGlobalBestAvg: TextView
     private lateinit var txtUserBestSpd: TextView
-    private lateinit var txtGlobalBestSpd: TextView
     private lateinit var statsLayout: LinearLayout
     private lateinit var txtCurrentSpeed: TextView
     private lateinit var btnMoreDetails: Button
@@ -237,11 +234,8 @@ class TrackNavigation : Fragment() {
         txtTrackName = view.findViewById(R.id.txtTrackName)
         txtTrackLength = view.findViewById(R.id.txtTrackLength)
         txtUserBest = view.findViewById(R.id.txtUserBest)
-        txtGlobalBest = view.findViewById(R.id.txtGlobalBest)
         txtUserBestAvg = view.findViewById(R.id.txtUserBestAvg)
-        txtGlobalBestAvg = view.findViewById(R.id.txtGlobalBestAvg)
         txtUserBestSpd = view.findViewById(R.id.txtUserBestSpd)
-        txtGlobalBestSpd = view.findViewById(R.id.txtGlobalBestSpd)
         txtDistance = view.findViewById(R.id.txtDistance)
         txtDuration = view.findViewById(R.id.txtDuration)
         statsLayout = view.findViewById(R.id.statsLayout)
@@ -334,18 +328,6 @@ class TrackNavigation : Fragment() {
                             txtUserBest.text = "Your Best Time: ${formatTime(it.time)}"
                             txtUserBestAvg.text = "Your Best Avg Speed: ${it.averageSpeed} km/h"
                             txtUserBestSpd.text = "Your Best Speed: ${it.maxSpeed} km/h"
-                        }
-                        if (details.overallBest != null) {
-                            txtGlobalBest.text =
-                                "Global Best Time: ${formatTime(details.overallBest.time)}"
-                            txtGlobalBestAvg.text =
-                                "Global Best Avg Speed: ${details.overallBest.averageSpeed} km/h"
-                            txtGlobalBestSpd.text =
-                                "Global Best Speed: ${details.overallBest.maxSpeed} km/h"
-                        } else {
-                            txtGlobalBest.text = "Global Best Time: N/A"
-                            txtGlobalBestAvg.text = "Global Best Avg Speed: N/A"
-                            txtGlobalBestSpd.text = "Global Best Speed: N/A"
                         }
                     }
                 }
