@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import androidx.constraintlayout.widget.Group
 import androidx.fragment.app.Fragment
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
@@ -27,6 +28,8 @@ class LoginRegister : Fragment() {
     private lateinit var etConfirmPassword: EditText
     private lateinit var btnSubmit: Button
     private lateinit var tvToggleMode: TextView
+    private lateinit var loginFormGroup: Group
+    private lateinit var splashGroup: Group
     private lateinit var api: AuthService
     private val apiCallCoroutine = CoroutineScope(Dispatchers.IO)
 
@@ -43,6 +46,8 @@ class LoginRegister : Fragment() {
         etConfirmPassword = view.findViewById(R.id.etConfirmPassword)
         btnSubmit = view.findViewById(R.id.btnSubmit)
         tvToggleMode = view.findViewById(R.id.tvToggleMode)
+        loginFormGroup = view.findViewById(R.id.loginFormGroup)
+        splashGroup = view.findViewById(R.id.splashGroup)
         api = (activity as MainActivity).authService
 
         tvToggleMode.setOnClickListener {
@@ -62,21 +67,29 @@ class LoginRegister : Fragment() {
             }
         }
 
-        // check if user is logged in
+        // check if user is logged in; keep the form hidden behind the splash until we know
         apiCallCoroutine.launch {
             try {
                 val userResponse: Response<UserResponse> =
                     api.getUser()
-                if (userResponse.isSuccessful) {
-                    withContext(Dispatchers.Main) {
+                withContext(Dispatchers.Main) {
+                    if (userResponse.isSuccessful) {
                         goToHome()
+                    } else {
+                        showLoginForm()
                     }
                 }
             } catch (e: Exception) {
                 Log.d("API-ERROR", e.stackTraceToString())
+                withContext(Dispatchers.Main) { showLoginForm() }
             }
         }
         return view
+    }
+
+    private fun showLoginForm() {
+        splashGroup.visibility = View.GONE
+        loginFormGroup.visibility = View.VISIBLE
     }
 
     private fun updateUIForMode() {
