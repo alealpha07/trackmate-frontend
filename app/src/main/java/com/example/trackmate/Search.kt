@@ -7,11 +7,13 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.content.getSystemService
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.trackmate.databinding.FragmentSearchBinding
@@ -169,6 +171,15 @@ class Search : Fragment() {
         setupSearchListener()
 
         return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        binding.searchEditText.requestFocus()
+        binding.searchEditText.post {
+            val imm = requireContext().getSystemService<InputMethodManager>()
+            imm?.showSoftInput(binding.searchEditText, InputMethodManager.SHOW_IMPLICIT)
+        }
     }
 
     private fun setupRecyclerView() {
