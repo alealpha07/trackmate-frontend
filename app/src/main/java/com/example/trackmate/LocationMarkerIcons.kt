@@ -25,7 +25,7 @@ private fun createLocationDotBitmap(context: Context): Bitmap {
     val radius = center - strokeWidth / 2f
 
     canvas.drawCircle(center, center, radius, Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = ContextCompat.getColor(context, R.color.primary_500)
+        color = ContextCompat.getColor(context, com.google.android.material.R.color.design_default_color_primary)
         style = Paint.Style.FILL
     })
     canvas.drawCircle(center, center, radius, Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -40,7 +40,7 @@ private fun createLocationDotBitmap(context: Context): Bitmap {
 private fun createNavigationArrowBitmap(context: Context): Bitmap {
     val density = context.resources.displayMetrics.density
     val sizePx = (NAVIGATION_ARROW_SIZE_DP * density).toInt()
-    val drawable = ContextCompat.getDrawable(context, R.drawable.baseline_navigation_24_primary)!!
+    val drawable = ContextCompat.getDrawable(context, R.drawable.baseline_navigation_24_purple)!!
     return drawable.toBitmap(sizePx, sizePx)
 }
 
