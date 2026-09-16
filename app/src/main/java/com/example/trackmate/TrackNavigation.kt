@@ -90,7 +90,6 @@ class TrackNavigation : Fragment() {
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
         ) {
-            // only the location dot, the camera follows the track preview
             myLocationOverlay.enableMyLocation()
         }
     }

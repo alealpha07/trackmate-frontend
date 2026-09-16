@@ -19,7 +19,6 @@ fun setupMapControls(
 ) {
     val context = fragment.requireContext()
 
-    // hide osmdroid's zoom buttons, we have our own
     mapView.zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
 
     btnLayers.setOnClickListener {
