@@ -15,7 +15,8 @@ fun setupMapControls(
     btnLayers: View,
     btnMyLocation: View,
     btnZoomIn: View,
-    btnZoomOut: View
+    btnZoomOut: View,
+    onStyleChanged: (MapStyle) -> Unit = {}
 ) {
     val context = fragment.requireContext()
 
@@ -33,6 +34,7 @@ fun setupMapControls(
                 saveMapStyle(context, selected)
                 mapView.setTileSource(tileSourceFor(selected))
                 mapView.invalidate()
+                onStyleChanged(selected)
                 dialog.dismiss()
             }
             .setNegativeButton("Cancel", null)
