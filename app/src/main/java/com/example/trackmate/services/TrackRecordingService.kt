@@ -52,7 +52,7 @@ class TrackRecordingService : Service() {
         // Needed for more precise maximum speed calculation, need to discard bad quality points
         private const val MAX_ACCURACY_METERS = 25f
         private const val MIN_RELIABLE_DT_SECONDS = 1f
-        private const val MAX_PLAUSIBLE_SPEED_MPS = 83f // ~300 km/h
+        private const val MAX_PLAUSIBLE_SPEED_MPS = 138.89f // ~500 km/h
     }
 
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])

@@ -30,6 +30,10 @@ const val LENGTH_SIMILARITY_RATIO = 0.15f
 const val REQUIRED_MIDDLE_POINTS_RATIO = 0.5f
 const val IS_BETWEEN_POINTS_THRESHOLD = 0.10
 
+const val MAX_ACCURACY_METERS = 25f
+const val MIN_RELIABLE_DT_SECONDS = 1f
+const val MAX_PLAUSIBLE_SPEED_MPS = 138.89f // ~500 km/h
+
 class TrackNavigationService : Service() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -241,14 +245,22 @@ class TrackNavigationService : Service() {
         startForeground(2, notification)
     }
 
+    private fun currentSpeedMps(location: Location, prev: Location?): Float {
+        if (location.hasSpeed() && location.speed <= MAX_PLAUSIBLE_SPEED_MPS) return location.speed
+        if (prev == null) return 0f
+
+        val dt = (location.time - prev.time) / 1000f
+        val accurateEnough = (!prev.hasAccuracy() || prev.accuracy <= MAX_ACCURACY_METERS) &&
+                (!location.hasAccuracy() || location.accuracy <= MAX_ACCURACY_METERS)
+        if (!accurateEnough || dt < MIN_RELIABLE_DT_SECONDS) return 0f
+
+        val speed = prev.distanceTo(location) / dt
+        return if (speed <= MAX_PLAUSIBLE_SPEED_MPS) speed else 0f
+    }
+
     private fun sendNavigationUpdate(location: Location) {
-        val speedKmh = if (navigationPath.size >= 2) {
-            val prev = navigationPath[navigationPath.size - 2]
-            val dt = (location.time - prev.time) / 1000f // seconds
-            if (dt > 0) prev.distanceTo(location) / dt * 3.6f else 0f
-        } else {
-            location.speed * 3.6f
-        }
+        val prev = navigationPath.getOrNull(navigationPath.size - 2)
+        val speedKmh = currentSpeedMps(location, prev) * 3.6f
 
         val intent = Intent("com.example.trackmate.NAVIGATION_UPDATE").apply {
             putExtra("lat", location.latitude)
@@ -330,8 +342,7 @@ class TrackNavigationService : Service() {
 
         navigationPath.zipWithNext { prev, curr ->
             distance += prev.distanceTo(curr)
-            val dt = (curr.time - prev.time) / 1000f
-            if (dt > 0) maxSpeed = maxOf(maxSpeed, prev.distanceTo(curr) / dt)
+            maxSpeed = maxOf(maxSpeed, currentSpeedMps(curr, prev))
         }
 
         val durationSec = (navigationPath.last().time - navigationPath.first().time) / 1000f
