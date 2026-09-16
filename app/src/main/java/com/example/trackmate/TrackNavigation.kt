@@ -254,9 +254,11 @@ class TrackNavigation : Fragment() {
     }
 
     private fun setupMap(view: View) {
-        mapView.setTileSource(tileSourceFor(getSavedMapStyle(requireContext())))
+        val mapStyle = getSavedMapStyle(requireContext())
+        mapView.setTileSource(tileSourceFor(mapStyle))
         mapView.setMultiTouchControls(true)
         mapView.controller.setZoom(16.0)
+        applyOverlayTextColor(mapStyle, txtDistance, txtDuration, txtCurrentSpeed)
 
         mapView.overlays.add(buildCopyrightOverlay(requireContext()))
 
@@ -271,7 +273,10 @@ class TrackNavigation : Fragment() {
             btnLayers = view.findViewById(R.id.btnLayers),
             btnMyLocation = view.findViewById(R.id.btnMyLocation),
             btnZoomIn = view.findViewById(R.id.btnZoomIn),
-            btnZoomOut = view.findViewById(R.id.btnZoomOut)
+            btnZoomOut = view.findViewById(R.id.btnZoomOut),
+            onStyleChanged = { style ->
+                applyOverlayTextColor(style, txtDistance, txtDuration, txtCurrentSpeed)
+            }
         )
 
         mapView.setOnTouchListener { _, event ->

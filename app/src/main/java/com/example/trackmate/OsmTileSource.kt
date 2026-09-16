@@ -2,18 +2,24 @@ package com.example.trackmate
 
 import android.content.Context
 import android.graphics.Color
+import android.widget.TextView
 import org.osmdroid.tileprovider.tilesource.XYTileSource
 import org.osmdroid.views.overlay.CopyrightOverlay
 
-enum class MapStyle(val id: String, val label: String, val urlSegment: String) {
+enum class MapStyle(val id: String, val label: String, val urlSegment: String, val isDark: Boolean = false) {
     OUTDOORS("outdoors", "Outdoors", "outdoors"),
     STREETS("osm_bright", "Streets", "osm_bright"),
     LIGHT("alidade_smooth", "Light", "alidade_smooth"),
-    DARK("alidade_smooth_dark", "Dark", "alidade_smooth_dark");
+    DARK("alidade_smooth_dark", "Dark", "alidade_smooth_dark", isDark = true);
 
     companion object {
         fun fromId(id: String?): MapStyle = entries.find { it.id == id } ?: OUTDOORS
     }
+}
+
+fun applyOverlayTextColor(style: MapStyle, vararg textViews: TextView) {
+    val color = if (style.isDark) Color.WHITE else Color.parseColor("#2b2d30")
+    textViews.forEach { it.setTextColor(color) }
 }
 
 private const val MAP_PREFS_NAME = "map_prefs"

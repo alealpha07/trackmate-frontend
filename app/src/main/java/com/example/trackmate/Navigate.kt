@@ -170,6 +170,8 @@ class Navigate : Fragment() {
         btnRecord = view.findViewById(R.id.btnRecord)
         btnOpenLibrary = view.findViewById(R.id.btnOpenLibrary)
         txtCurrentSpeed = view.findViewById(R.id.txtCurrentSpeed)
+        txtDistance = view.findViewById(R.id.txtDistance)
+        txtDuration = view.findViewById(R.id.txtDuration)
         setupMap(view)
         btnRecord.text =
             if (TrackRecordingService.isRecording) "Stop Recording" else "Start Recording"
@@ -179,15 +181,15 @@ class Navigate : Fragment() {
         btnOpenLibrary.setOnClickListener {
             findNavController().navigate(R.id.savedTracks)
         }
-        txtDistance = view.findViewById(R.id.txtDistance)
-        txtDuration = view.findViewById(R.id.txtDuration)
         return view
     }
 
     private fun setupMap(view: View) {
-        mapView.setTileSource(tileSourceFor(getSavedMapStyle(requireContext())))
+        val mapStyle = getSavedMapStyle(requireContext())
+        mapView.setTileSource(tileSourceFor(mapStyle))
         mapView.setMultiTouchControls(true)
         mapView.controller.setZoom(16.0)
+        applyOverlayTextColor(mapStyle, txtDistance, txtDuration, txtCurrentSpeed)
 
         mapView.overlays.add(buildCopyrightOverlay(requireContext()))
 
@@ -202,7 +204,10 @@ class Navigate : Fragment() {
             btnLayers = view.findViewById(R.id.btnLayers),
             btnMyLocation = view.findViewById(R.id.btnMyLocation),
             btnZoomIn = view.findViewById(R.id.btnZoomIn),
-            btnZoomOut = view.findViewById(R.id.btnZoomOut)
+            btnZoomOut = view.findViewById(R.id.btnZoomOut),
+            onStyleChanged = { style ->
+                applyOverlayTextColor(style, txtDistance, txtDuration, txtCurrentSpeed)
+            }
         )
 
         mapView.setOnTouchListener { _, event ->
