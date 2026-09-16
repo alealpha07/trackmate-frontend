@@ -90,10 +90,6 @@ class TrackNavigation : Fragment() {
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
         ) {
-            // Only shows the current-location dot; the camera is driven by the track
-            // preview (bounding box fit) and, once started, by updatePolyline's chase
-            // camera. Auto-centering here would yank the view away from the track
-            // preview to wherever the user currently is, which isn't relevant yet.
             myLocationOverlay.enableMyLocation()
         }
     }
