@@ -27,6 +27,7 @@ import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.io.File
 import java.io.FileOutputStream
+import kotlin.math.roundToInt
 
 fun formatTime(seconds: Float): String {
     val totalSeconds = seconds.toInt()
@@ -131,7 +132,7 @@ class TrackNavigation : Fragment() {
             val nextLng = intent.getDoubleExtra("nextLng", Double.NaN)
             val speed = intent.getFloatExtra("speed", 0f)
 
-            txtCurrentSpeed.text = "Speed: ${String.format("%.2f", speed)} km/h"
+            txtCurrentSpeed.text = "Speed: ${speed.roundToInt()} km/h"
             txtDistance.text = "Distance: ${String.format("%.2f", distance)} km"
             txtDuration.text = "Duration: ${formatTime((duration / 1000).toFloat())}"
 

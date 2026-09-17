@@ -42,6 +42,7 @@ import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.io.File
+import kotlin.math.roundToInt
 
 const val DRAG_RESUME_FOLLOW_TIME: Long = 5000
 
@@ -100,7 +101,7 @@ class Navigate : Fragment() {
             val duration = intent.getLongExtra("duration", 0L)
             val speed = intent.getFloatExtra("speed", 0f)
 
-            txtCurrentSpeed.text = "Speed: ${String.format("%.2f", speed)} km/h"
+            txtCurrentSpeed.text = "Speed: ${speed.roundToInt()} km/h"
             txtDistance.text = "Distance: ${String.format("%.2f", distance)} km"
             txtDuration.text = "Duration: ${formatTime((duration / 1000).toFloat())}"
 
