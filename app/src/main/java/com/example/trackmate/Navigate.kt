@@ -60,6 +60,8 @@ class Navigate : Fragment() {
     private val pathPoints = mutableListOf<GeoPoint>()
     private val apiCallCoroutine = CoroutineScope(Dispatchers.IO)
     private var userIsInteracting = false
+    private var smoothedBearing = 0f
+    private var hasSmoothedBearing = false
     private val handler = Handler(Looper.getMainLooper())
     private val resumeFollowRunnable = Runnable {
         userIsInteracting = false
@@ -107,11 +109,12 @@ class Navigate : Fragment() {
 
             val lat = intent.getDoubleExtra("lat", Double.NaN)
             val lng = intent.getDoubleExtra("lng", Double.NaN)
+            val bearing = intent.getFloatExtra("bearing", Float.NaN)
 
             if (!lat.isNaN() && !lng.isNaN()) {
                 val newPoint = GeoPoint(lat, lng)
                 pathPoints.add(newPoint)
-                updatePolyline()
+                updatePolyline(if (bearing.isNaN()) null else bearing)
             }
         }
     }
@@ -133,7 +136,29 @@ class Navigate : Fragment() {
         }
     }
 
-    private fun updatePolyline() {
+    private fun interpolateHeading(from: Float, to: Float, t: Float): Float {
+        var diff = ((to - from + 540f) % 360f) - 180f
+        return (from + diff * t + 360f) % 360f
+    }
+
+    private fun computeOffset(from: GeoPoint, bearingDeg: Double, distanceMeters: Double): GeoPoint {
+        val R = 6371000.0
+        val bearingRad = Math.toRadians(bearingDeg)
+        val lat1 = Math.toRadians(from.latitude)
+        val lon1 = Math.toRadians(from.longitude)
+        val angDist = distanceMeters / R
+        val lat2 = Math.asin(
+            Math.sin(lat1) * Math.cos(angDist) +
+                    Math.cos(lat1) * Math.sin(angDist) * Math.cos(bearingRad)
+        )
+        val lon2 = lon1 + Math.atan2(
+            Math.sin(bearingRad) * Math.sin(angDist) * Math.cos(lat1),
+            Math.cos(angDist) - Math.sin(lat1) * Math.sin(lat2)
+        )
+        return GeoPoint(Math.toDegrees(lat2), Math.toDegrees(lon2))
+    }
+
+    private fun updatePolyline(bearing: Float? = null) {
         if (!::mapView.isInitialized) return
 
         if (polyline == null) {
@@ -147,11 +172,20 @@ class Navigate : Fragment() {
             mapView.overlays.add(polyline)
         }
         polyline?.setPoints(pathPoints)
-        mapView.invalidate()
+
+        if (bearing != null) {
+            if (!hasSmoothedBearing) {
+                smoothedBearing = bearing
+                hasSmoothedBearing = true
+            } else smoothedBearing = interpolateHeading(smoothedBearing, bearing, 0.22f)
+        }
 
         if (!userIsInteracting && pathPoints.isNotEmpty()) {
-            mapView.controller.animateTo(pathPoints.last(), 18.0, 1000L)
+            val cameraTarget = computeOffset(pathPoints.last(), smoothedBearing.toDouble(), 30.0)
+            mapView.mapOrientation = -smoothedBearing
+            mapView.controller.animateTo(cameraTarget)
         }
+        mapView.invalidate()
     }
 
     private fun clearPolyline() {
