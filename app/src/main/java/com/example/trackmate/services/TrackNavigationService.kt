@@ -47,6 +47,7 @@ class TrackNavigationService : Service() {
     private var lastNearestIndex = 0
     private var lastOffTrack = false
     private var startTime: Long = 0
+    private var navigationCompleted = false
     private lateinit var workerThread: HandlerThread
     private lateinit var updateHandler: Handler
     private lateinit var updateRunnable: Runnable
@@ -68,6 +69,7 @@ class TrackNavigationService : Service() {
 
         updateRunnable = object : Runnable {
             override fun run() {
+                if (navigationCompleted) return
                 navigationPath.lastOrNull()?.let { sendNavigationUpdate(it) }
                 updateHandler.postDelayed(this, 500L)
             }
@@ -96,6 +98,7 @@ class TrackNavigationService : Service() {
 
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
+                if (navigationCompleted) return
                 val location = result.lastLocation ?: return
                 if (navigationPath.lastOrNull()
                         ?.let { it.latitude == location.latitude && it.longitude == location.longitude } == true
@@ -281,6 +284,7 @@ class TrackNavigationService : Service() {
     }
 
     private fun checkCompletionCriteria() {
+        if (navigationCompleted) return
         if (referenceTrackPoints.isEmpty() || navigationPath.isEmpty()) return
         val endReached = visitedIndices.contains(referenceTrackPoints.lastIndex)
         val middleEnough = isPathFollowingReference()
@@ -289,9 +293,11 @@ class TrackNavigationService : Service() {
             traveledMeters >= referenceTrackLengthMeters * (1f - LENGTH_SIMILARITY_RATIO)
 
         if (endReached && lengthSimilar && middleEnough) {
+            navigationCompleted = true
             currentTargetIndex = referenceTrackPoints.size
             isNavigating = false
             lastNavigationData = calculateTravelData()
+            updateHandler.removeCallbacks(updateRunnable)
             stopSelf()
         }
     }
@@ -356,16 +362,17 @@ class TrackNavigationService : Service() {
     }
 
     override fun onDestroy() {
-        lastNavigationData = calculateTravelData()
-        navigationPath.clear()
-        referenceTrackPoints.clear()
-        visitedIndices.clear()
-        currentTargetIndex = 1
-        isNavigating = false
-        trackId = -1
         locationCallback?.let { fusedLocationClient.removeLocationUpdates(it) }
 
-        updateHandler.removeCallbacks(updateRunnable)
+        // Keep navigationPath access confined to the worker thread to avoid racing onDestroy.
+        updateHandler.removeCallbacksAndMessages(null)
+        updateHandler.post {
+            if (!navigationCompleted) {
+                lastNavigationData = calculateTravelData()
+            }
+            isNavigating = false
+            trackId = -1
+        }
         workerThread.quitSafely()
 
         super.onDestroy()
