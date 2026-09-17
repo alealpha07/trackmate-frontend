@@ -53,7 +53,6 @@ class TrackNavigation : Fragment() {
     private lateinit var txtCurrentSpeed: TextView
     private lateinit var btnMoreDetails: Button
 
-    private var polyline: Polyline? = null
     private var referencePolyline: Polyline? = null
     private var passedPolyline: Polyline? = null
     private val pathPoints = mutableListOf<GeoPoint>()
@@ -151,7 +150,7 @@ class TrackNavigation : Fragment() {
                     })
                 } else 0f
 
-                updatePolyline(newPoint, bearing)
+                updateCamera(newPoint, bearing)
             }
 
             if (nearestIndex >= 0 && referencePoints.isNotEmpty()) {
@@ -191,17 +190,8 @@ class TrackNavigation : Fragment() {
         offTrackDialog = null
     }
 
-    private fun updatePolyline(currentPoint: GeoPoint, bearing: Float) {
+    private fun updateCamera(currentPoint: GeoPoint, bearing: Float) {
         if (!::mapView.isInitialized) return
-
-        if (polyline == null) {
-            polyline = Polyline().apply {
-                outlinePaint.color = ContextCompat.getColor(requireContext(), R.color.primary_500)
-                outlinePaint.strokeWidth = 10f
-            }
-            mapView.overlays.add(polyline)
-        }
-        polyline?.setPoints(pathPoints)
 
         if (!hasSmoothedBearing) {
             smoothedBearing = bearing
@@ -216,11 +206,8 @@ class TrackNavigation : Fragment() {
         mapView.invalidate()
     }
 
-    private fun clearPolyline() {
-        polyline?.let { mapView.overlays.remove(it) }
-        polyline = null
+    private fun resetTravelledPath() {
         pathPoints.clear()
-        if (::mapView.isInitialized) mapView.invalidate()
     }
 
     override fun onCreateView(
@@ -390,6 +377,12 @@ class TrackNavigation : Fragment() {
         }
         mapView.overlays.add(finishMarker)
 
+        // Keep the location cursor drawn above the track overlays added above it.
+        if (::myLocationOverlay.isInitialized) {
+            mapView.overlays.remove(myLocationOverlay)
+            mapView.overlays.add(myLocationOverlay)
+        }
+
         mapView.zoomToBoundingBox(BoundingBox.fromGeoPoints(points), false, 100)
         mapView.invalidate()
 
@@ -492,7 +485,7 @@ class TrackNavigation : Fragment() {
                 return@addOnSuccessListener
             }
 
-            clearPolyline()
+            resetTravelledPath()
             navigationFinishHandled = false
             TrackNavigationService.isNavigating = true
             statsLayout.visibility = View.GONE
