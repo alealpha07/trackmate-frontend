@@ -61,6 +61,7 @@ class TrackNavigation : Fragment() {
 
     private var offTrackDialog: AlertDialog? = null
     private var offTrackShown = false
+    private var navigationFinishHandled = false
     private var smoothedBearing = 0f
     private var hasSmoothedBearing = false
     private var userIsInteracting = false
@@ -167,7 +168,10 @@ class TrackNavigation : Fragment() {
                 dismissOffTrackDialog()
             }
 
-            if (isFinished) stopNavigation(true)
+            if (isFinished && !navigationFinishHandled) {
+                navigationFinishHandled = true
+                stopNavigation(true)
+            }
         }
     }
 
@@ -489,6 +493,7 @@ class TrackNavigation : Fragment() {
             }
 
             clearPolyline()
+            navigationFinishHandled = false
             TrackNavigationService.isNavigating = true
             statsLayout.visibility = View.GONE
             btnRecord.text = "Cancel Navigation"
