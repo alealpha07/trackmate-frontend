@@ -165,6 +165,9 @@ class TrackRecordingService : Service() {
             val lastLocation = pathPoints.last().first
             intent.putExtra("lat", lastLocation.latitude)
             intent.putExtra("lng", lastLocation.longitude)
+            if (lastLocation.hasBearing()) {
+                intent.putExtra("bearing", lastLocation.bearing)
+            }
 
             val speedKmh = if (pathPoints.size >= 2) {
                 val (prevLoc, prevTime) = pathPoints[pathPoints.size - 2]
