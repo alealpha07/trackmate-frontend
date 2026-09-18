@@ -261,7 +261,7 @@ class TrackNavigation : Fragment() {
         val mapStyle = getSavedMapStyle(requireContext())
         mapView.setTileSource(tileSourceFor(mapStyle))
         mapView.setMultiTouchControls(true)
-        mapView.controller.setZoom(16.0)
+        mapView.controller.setZoom(DEFAULT_MAP_ZOOM)
         applyOverlayTextColor(mapStyle, txtDistance, txtDuration, txtCurrentSpeed)
 
         mapView.overlays.add(buildCopyrightOverlay(requireContext()))
@@ -427,6 +427,7 @@ class TrackNavigation : Fragment() {
                 txtDuration.visibility = View.VISIBLE
                 txtCurrentSpeed.visibility = View.VISIBLE
                 btnRecord.text = "Cancel Navigation"
+                mapView.controller.setZoom(TRACKING_ZOOM_LEVEL)
             }
         } else {
             startIdleSpeedUpdates()
@@ -506,6 +507,7 @@ class TrackNavigation : Fragment() {
             TrackNavigationService.isNavigating = true
             statsLayout.visibility = View.GONE
             btnRecord.text = "Cancel Navigation"
+            mapView.controller.setZoom(TRACKING_ZOOM_LEVEL)
 
             val sourceFile = File(requireContext().filesDir, "navigation.json")
             val destinationFile = File(requireContext().filesDir, "navigation_track.json")

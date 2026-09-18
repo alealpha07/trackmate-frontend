@@ -253,7 +253,7 @@ class Navigate : Fragment() {
         val mapStyle = getSavedMapStyle(requireContext())
         mapView.setTileSource(tileSourceFor(mapStyle))
         mapView.setMultiTouchControls(true)
-        mapView.controller.setZoom(16.0)
+        mapView.controller.setZoom(DEFAULT_MAP_ZOOM)
         applyOverlayTextColor(mapStyle, txtDistance, txtDuration, txtCurrentSpeed)
 
         mapView.overlays.add(buildCopyrightOverlay(requireContext()))
@@ -306,6 +306,7 @@ class Navigate : Fragment() {
         TrackRecordingService.isRecording = true
         btnRecord.text = "Stop Recording"
         btnOpenLibrary.visibility = View.GONE
+        mapView.controller.setZoom(TRACKING_ZOOM_LEVEL)
 
         val intent = Intent(requireContext(), TrackRecordingService::class.java)
         requireContext().startForegroundService(intent)
@@ -411,6 +412,7 @@ class Navigate : Fragment() {
         }
         mapView.onResume()
         if (TrackRecordingService.isRecording) {
+            mapView.controller.setZoom(TRACKING_ZOOM_LEVEL)
             val recordedPoints = TrackRecordingService.pathPoints
             if (recordedPoints.isNotEmpty()) {
                 pathPoints.clear()

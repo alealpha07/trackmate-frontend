@@ -11,6 +11,9 @@ import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
+const val DEFAULT_MAP_ZOOM = 16.0
+const val TRACKING_ZOOM_LEVEL = 18.5
+
 fun interpolateHeading(from: Float, to: Float, t: Float): Float {
     val diff = ((to - from + 540f) % 360f) - 180f
     return (from + diff * t + 360f) % 360f
