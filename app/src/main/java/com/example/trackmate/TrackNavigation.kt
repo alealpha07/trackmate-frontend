@@ -61,8 +61,6 @@ class TrackNavigation : Fragment() {
     private var offTrackDialog: AlertDialog? = null
     private var offTrackShown = false
     private var navigationFinishHandled = false
-    private var smoothedBearing = 0f
-    private var hasSmoothedBearing = false
     private var userIsInteracting = false
 
     private val handler = Handler(Looper.getMainLooper())
@@ -131,27 +129,9 @@ class TrackNavigation : Fragment() {
     }
 
 
-    private fun interpolateHeading(from: Float, to: Float, t: Float): Float {
-        var diff = ((to - from + 540f) % 360f) - 180f
-        return (from + diff * t + 360f) % 360f
-    }
-
-    private fun computeOffset(from: GeoPoint, bearingDeg: Double, distanceMeters: Double): GeoPoint {
-        val R = 6371000.0
-        val bearingRad = Math.toRadians(bearingDeg)
-        val lat1 = Math.toRadians(from.latitude)
-        val lon1 = Math.toRadians(from.longitude)
-        val angDist = distanceMeters / R
-        val lat2 = Math.asin(
-            Math.sin(lat1) * Math.cos(angDist) +
-                    Math.cos(lat1) * Math.sin(angDist) * Math.cos(bearingRad)
-        )
-        val lon2 = lon1 + Math.atan2(
-            Math.sin(bearingRad) * Math.sin(angDist) * Math.cos(lat1),
-            Math.cos(angDist) - Math.sin(lat1) * Math.sin(lat2)
-        )
-        return GeoPoint(Math.toDegrees(lat2), Math.toDegrees(lon2))
-    }
+    // Interpolates the map's position/rotation between successive GPS fixes so panning and
+    // tilting read as continuous motion instead of a snap on every ~500ms location update.
+    private val motionAnimator = MapMotionAnimator { point, bearing -> onLocationFrame(point, bearing) }
 
     private val navigationUpdateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -183,9 +163,9 @@ class TrackNavigation : Fragment() {
                         latitude = nextLat
                         longitude = nextLng
                     })
-                } else 0f
+                } else null
 
-                updateCamera(newPoint, bearing)
+                motionAnimator.animateTo(newPoint, bearing)
             }
 
             if (nearestIndex >= 0 && referencePoints.isNotEmpty()) {
@@ -225,24 +205,20 @@ class TrackNavigation : Fragment() {
         offTrackDialog = null
     }
 
-    private fun updateCamera(currentPoint: GeoPoint, bearing: Float) {
+    private fun onLocationFrame(point: GeoPoint, bearing: Float) {
         if (!::mapView.isInitialized) return
 
-        if (!hasSmoothedBearing) {
-            smoothedBearing = bearing
-            hasSmoothedBearing = true
-        } else smoothedBearing = interpolateHeading(smoothedBearing, bearing, 0.22f)
-
         if (!userIsInteracting) {
-            val cameraTarget = computeOffset(currentPoint, smoothedBearing.toDouble(), 30.0)
-            mapView.mapOrientation = -smoothedBearing
-            mapView.controller.animateTo(cameraTarget)
+            val cameraTarget = computeOffset(point, bearing.toDouble(), 30.0)
+            mapView.mapOrientation = -bearing
+            mapView.controller.setCenter(cameraTarget)
         }
         mapView.invalidate()
     }
 
     private fun resetTravelledPath() {
         pathPoints.clear()
+        motionAnimator.reset()
     }
 
     override fun onCreateView(
@@ -465,6 +441,7 @@ class TrackNavigation : Fragment() {
         super.onPause()
         mapView.onPause()
         stopIdleSpeedUpdates()
+        motionAnimator.cancel()
         LocalBroadcastManager.getInstance(requireContext())
             .unregisterReceiver(navigationUpdateReceiver)
     }

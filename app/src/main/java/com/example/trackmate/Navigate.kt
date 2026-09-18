@@ -69,8 +69,6 @@ class Navigate : Fragment() {
     private val pathPoints = mutableListOf<GeoPoint>()
     private val apiCallCoroutine = CoroutineScope(Dispatchers.IO)
     private var userIsInteracting = false
-    private var smoothedBearing = 0f
-    private var hasSmoothedBearing = false
     private val handler = Handler(Looper.getMainLooper())
     private val resumeFollowRunnable = Runnable {
         userIsInteracting = false
@@ -154,8 +152,10 @@ class Navigate : Fragment() {
 
             if (!lat.isNaN() && !lng.isNaN()) {
                 val newPoint = GeoPoint(lat, lng)
-                pathPoints.add(newPoint)
-                updatePolyline(if (bearing.isNaN()) null else bearing)
+                if (pathPoints.lastOrNull() != newPoint) {
+                    pathPoints.add(newPoint)
+                }
+                motionAnimator.animateTo(newPoint, if (bearing.isNaN()) null else bearing)
             }
         }
     }
@@ -177,54 +177,41 @@ class Navigate : Fragment() {
         }
     }
 
-    private fun interpolateHeading(from: Float, to: Float, t: Float): Float {
-        var diff = ((to - from + 540f) % 360f) - 180f
-        return (from + diff * t + 360f) % 360f
+    // Interpolates the map's position/rotation between successive GPS fixes so panning and
+    // tilting read as continuous motion instead of a snap on every ~500ms location update.
+    // The extra frames are display-only: pathPoints/the saved track are unaffected.
+    private val motionAnimator = MapMotionAnimator { point, bearing -> onLocationFrame(point, bearing) }
+
+    private fun ensurePolyline(): Polyline {
+        polyline?.let { return it }
+        val newPolyline = Polyline().apply {
+            outlinePaint.color = ContextCompat.getColor(
+                requireContext(),
+                com.google.android.material.R.color.design_default_color_primary
+            )
+            outlinePaint.strokeWidth = 10f
+        }
+        polyline = newPolyline
+        mapView.overlays.add(newPolyline)
+        return newPolyline
     }
 
-    private fun computeOffset(from: GeoPoint, bearingDeg: Double, distanceMeters: Double): GeoPoint {
-        val R = 6371000.0
-        val bearingRad = Math.toRadians(bearingDeg)
-        val lat1 = Math.toRadians(from.latitude)
-        val lon1 = Math.toRadians(from.longitude)
-        val angDist = distanceMeters / R
-        val lat2 = Math.asin(
-            Math.sin(lat1) * Math.cos(angDist) +
-                    Math.cos(lat1) * Math.sin(angDist) * Math.cos(bearingRad)
-        )
-        val lon2 = lon1 + Math.atan2(
-            Math.sin(bearingRad) * Math.sin(angDist) * Math.cos(lat1),
-            Math.cos(angDist) - Math.sin(lat1) * Math.sin(lat2)
-        )
-        return GeoPoint(Math.toDegrees(lat2), Math.toDegrees(lon2))
+    private fun redrawPolyline() {
+        if (!::mapView.isInitialized) return
+        ensurePolyline().setPoints(pathPoints)
+        mapView.invalidate()
     }
 
-    private fun updatePolyline(bearing: Float? = null) {
+    private fun onLocationFrame(point: GeoPoint, bearing: Float) {
         if (!::mapView.isInitialized) return
 
-        if (polyline == null) {
-            polyline = Polyline().apply {
-                outlinePaint.color = ContextCompat.getColor(
-                    requireContext(),
-                    com.google.android.material.R.color.design_default_color_primary
-                )
-                outlinePaint.strokeWidth = 10f
-            }
-            mapView.overlays.add(polyline)
-        }
-        polyline?.setPoints(pathPoints)
+        val displayedPoints = if (pathPoints.isNotEmpty()) pathPoints.dropLast(1) + point else listOf(point)
+        ensurePolyline().setPoints(displayedPoints)
 
-        if (bearing != null) {
-            if (!hasSmoothedBearing) {
-                smoothedBearing = bearing
-                hasSmoothedBearing = true
-            } else smoothedBearing = interpolateHeading(smoothedBearing, bearing, 0.22f)
-        }
-
-        if (!userIsInteracting && pathPoints.isNotEmpty()) {
-            val cameraTarget = computeOffset(pathPoints.last(), smoothedBearing.toDouble(), 30.0)
-            mapView.mapOrientation = -smoothedBearing
-            mapView.controller.animateTo(cameraTarget)
+        if (!userIsInteracting) {
+            val cameraTarget = computeOffset(point, bearing.toDouble(), 30.0)
+            mapView.mapOrientation = -bearing
+            mapView.controller.setCenter(cameraTarget)
         }
         mapView.invalidate()
     }
@@ -233,6 +220,7 @@ class Navigate : Fragment() {
         polyline?.let { mapView.overlays.remove(it) }
         polyline = null
         pathPoints.clear()
+        motionAnimator.reset()
         if (::mapView.isInitialized) mapView.invalidate()
     }
 
@@ -432,7 +420,8 @@ class Navigate : Fragment() {
                         it.first.longitude
                     )
                 })
-                updatePolyline()
+                motionAnimator.snapTo(pathPoints.last(), 0f)
+                redrawPolyline()
             }
             btnOpenLibrary.visibility = View.GONE
         } else {
@@ -455,6 +444,7 @@ class Navigate : Fragment() {
         super.onPause()
         mapView.onPause()
         stopIdleSpeedUpdates()
+        motionAnimator.cancel()
         LocalBroadcastManager.getInstance(requireContext())
             .unregisterReceiver(trackUpdateReceiver)
         LocalBroadcastManager.getInstance(requireContext())
