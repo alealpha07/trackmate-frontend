@@ -80,12 +80,20 @@ class TrackNavigationService : Service() {
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         trackId = intent?.getIntExtra("trackId", -1) ?: -1
+
+        // Must promote to a foreground service immediately: Android requires startForeground()
+        // to be called right after startForegroundService(), or the service gets killed once the
+        // app is backgrounded/screen off, before location updates ever start.
+        startForegroundService()
+
         CoroutineScope(Dispatchers.IO).launch {
             loadReferenceTrack()
             if (referenceTrackPoints.isNotEmpty()) {
-                startForegroundService()
                 startLocationUpdates()
                 startTime = System.nanoTime()
+            } else {
+                Log.e("NAV_SERVICE", "Reference track empty, stopping navigation service")
+                stopSelf()
             }
         }
         return START_NOT_STICKY
