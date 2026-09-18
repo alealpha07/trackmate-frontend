@@ -5,7 +5,6 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
@@ -35,8 +34,8 @@ class TrackAdapter(
         val txtBestTime: TextView = view.findViewById(R.id.txtBestTime)
         val txtMaxSpeed: TextView = view.findViewById(R.id.txtMaxSpeed)
         val txtBestAvgSpeed: TextView = view.findViewById(R.id.txtBestAvgSpeed)
-        val btnEdit: Button = view.findViewById(R.id.btnEdit)
-        val btnDelete: Button = view.findViewById(R.id.btnDelete)
+        val btnEdit: ImageButton = view.findViewById(R.id.btnEdit)
+        val btnDelete: ImageButton = view.findViewById(R.id.btnDelete)
         val btnRenavigate: ImageButton = view.findViewById(R.id.btnRenavigate)
     }
 
