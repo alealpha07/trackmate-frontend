@@ -36,11 +36,6 @@ fun computeOffset(from: GeoPoint, bearingDeg: Double, distanceMeters: Double): G
     return GeoPoint(Math.toDegrees(lat2), Math.toDegrees(lon2))
 }
 
-/**
- * Animates the on-screen position/bearing smoothly between successive (infrequent) GPS fixes,
- * so the camera pan and map rotation don't visibly snap every time a new fix arrives. This is
- * purely a rendering aid: it interpolates for display only and never invents or persists points.
- */
 class MapMotionAnimator(
     private val durationMs: Long = 450L,
     private val onFrame: (position: GeoPoint, bearing: Float) -> Unit
@@ -73,7 +68,6 @@ class MapMotionAnimator(
         animator?.start()
     }
 
-    /** Places the position/bearing immediately, with no animation (e.g. on first fix or resync). */
     fun snapTo(target: GeoPoint, targetBearing: Float) {
         animator?.cancel()
         currentPoint = target
@@ -85,8 +79,6 @@ class MapMotionAnimator(
         animator?.cancel()
     }
 
-    /** Cancels any in-flight animation and forgets the last position, so the next animateTo()
-     * call snaps immediately instead of animating in from a stale/unrelated point. */
     fun reset() {
         animator?.cancel()
         currentPoint = null
