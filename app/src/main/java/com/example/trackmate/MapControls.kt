@@ -36,7 +36,6 @@ fun computeOffset(from: GeoPoint, bearingDeg: Double, distanceMeters: Double): G
     return GeoPoint(Math.toDegrees(lat2), Math.toDegrees(lon2))
 }
 
-// smooth position and bearing between GPS fixes, display only
 class MapMotionAnimator(
     private val durationMs: Long = 450L,
     private val onFrame: (position: GeoPoint, bearing: Float) -> Unit
