@@ -14,7 +14,7 @@ import androidx.fragment.app.Fragment
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.fragment.navArgs
 import com.example.trackmate.services.*
-import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.navigation.fragment.findNavController
 import kotlinx.coroutines.*
@@ -73,10 +73,14 @@ class TrackNavigation : Fragment() {
     private lateinit var questApi: QuestService
     private val args: TrackNavigationArgs by navArgs()
 
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private var idleSpeedCallback: LocationCallback? = null
+
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             if (isGranted) {
                 enableMyLocation()
+                if (!TrackNavigationService.isNavigating) startIdleSpeedUpdates()
             } else {
                 Toast.makeText(requireContext(), "Location permission denied", Toast.LENGTH_SHORT)
                     .show()
@@ -93,6 +97,37 @@ class TrackNavigation : Fragment() {
         ) {
             myLocationOverlay.enableMyLocation()
         }
+    }
+
+    // Keeps the speed readout live while previewing/finishing a track, i.e. outside of an
+    // active navigation, which otherwise drives txtCurrentSpeed via its own broadcast.
+    private fun startIdleSpeedUpdates() {
+        if (idleSpeedCallback != null) return
+        if (ActivityCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) return
+
+        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000L)
+            .setMinUpdateIntervalMillis(500L)
+            .build()
+
+        idleSpeedCallback = object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+                val location = result.lastLocation ?: return
+                val speedKmh = if (location.hasSpeed() && location.speed <= MAX_PLAUSIBLE_SPEED_MPS) {
+                    location.speed * 3.6f
+                } else 0f
+                txtCurrentSpeed.text = "Speed: ${speedKmh.roundToInt()} km/h"
+            }
+        }
+        fusedLocationClient.requestLocationUpdates(request, idleSpeedCallback!!, Looper.getMainLooper())
+    }
+
+    private fun stopIdleSpeedUpdates() {
+        idleSpeedCallback?.let { fusedLocationClient.removeLocationUpdates(it) }
+        idleSpeedCallback = null
     }
 
 
@@ -246,6 +281,7 @@ class TrackNavigation : Fragment() {
     }
 
     private fun setupMap(view: View) {
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext())
         val mapStyle = getSavedMapStyle(requireContext())
         mapView.setTileSource(tileSourceFor(mapStyle))
         mapView.setMultiTouchControls(true)
@@ -416,6 +452,8 @@ class TrackNavigation : Fragment() {
                 txtCurrentSpeed.visibility = View.VISIBLE
                 btnRecord.text = "Cancel Navigation"
             }
+        } else {
+            startIdleSpeedUpdates()
         }
         LocalBroadcastManager.getInstance(requireContext()).registerReceiver(
             navigationUpdateReceiver,
@@ -426,6 +464,7 @@ class TrackNavigation : Fragment() {
     override fun onPause() {
         super.onPause()
         mapView.onPause()
+        stopIdleSpeedUpdates()
         LocalBroadcastManager.getInstance(requireContext())
             .unregisterReceiver(navigationUpdateReceiver)
     }
@@ -442,7 +481,6 @@ class TrackNavigation : Fragment() {
             return
         }
 
-        val fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext())
         if (ActivityCompat.checkSelfPermission(
                 requireContext(),
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -487,6 +525,7 @@ class TrackNavigation : Fragment() {
 
             resetTravelledPath()
             navigationFinishHandled = false
+            stopIdleSpeedUpdates()
             TrackNavigationService.isNavigating = true
             statsLayout.visibility = View.GONE
             btnRecord.text = "Cancel Navigation"
@@ -518,14 +557,14 @@ class TrackNavigation : Fragment() {
 
         txtDistance.text = "Distance: 0.00 km"
         txtDuration.text = "Duration: 0:0:0"
-        txtDuration.text = "Speed: 0 km/h"
+        txtCurrentSpeed.text = "Speed: 0 km/h"
         txtDistance.visibility = View.GONE
         txtDuration.visibility = View.GONE
-        txtCurrentSpeed.visibility = View.GONE
         statsLayout.visibility = View.VISIBLE
 
         val intent = Intent(requireContext(), TrackNavigationService::class.java)
         requireContext().stopService(intent)
+        startIdleSpeedUpdates()
     }
 
     private fun stopNavigation(isFinished: Boolean = false) {

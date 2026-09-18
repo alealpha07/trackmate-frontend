@@ -23,12 +23,19 @@ import androidx.fragment.app.Fragment
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.fragment.findNavController
 import com.example.trackmate.services.IncreaseQuestRequest
+import com.example.trackmate.services.MAX_PLAUSIBLE_SPEED_MPS
 import com.example.trackmate.services.NewTrackRequest
 import com.example.trackmate.services.NewTravelRequest
 import com.example.trackmate.services.QuestService
 import com.example.trackmate.services.QuestType
 import com.example.trackmate.services.TrackNavigationService
 import com.example.trackmate.services.TrackRecordingService
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -56,6 +63,8 @@ class Navigate : Fragment() {
     private lateinit var txtDuration: TextView
     private lateinit var txtCurrentSpeed: TextView
     private lateinit var questApi: QuestService
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private var idleSpeedCallback: LocationCallback? = null
     private var polyline: Polyline? = null
     private val pathPoints = mutableListOf<GeoPoint>()
     private val apiCallCoroutine = CoroutineScope(Dispatchers.IO)
@@ -71,11 +80,43 @@ class Navigate : Fragment() {
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
             if (isGranted) {
                 enableMyLocation()
+                if (!TrackRecordingService.isRecording) startIdleSpeedUpdates()
             } else {
                 Toast.makeText(requireContext(), "Location permission denied", Toast.LENGTH_SHORT)
                     .show()
             }
         }
+
+    // Keeps the speed readout live while just browsing the map, i.e. outside of an
+    // active recording, which otherwise drives txtCurrentSpeed via its own broadcast.
+    private fun startIdleSpeedUpdates() {
+        if (idleSpeedCallback != null) return
+        if (ActivityCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) return
+
+        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000L)
+            .setMinUpdateIntervalMillis(500L)
+            .build()
+
+        idleSpeedCallback = object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+                val location = result.lastLocation ?: return
+                val speedKmh = if (location.hasSpeed() && location.speed <= MAX_PLAUSIBLE_SPEED_MPS) {
+                    location.speed * 3.6f
+                } else 0f
+                txtCurrentSpeed.text = "Speed: ${speedKmh.roundToInt()} km/h"
+            }
+        }
+        fusedLocationClient.requestLocationUpdates(request, idleSpeedCallback!!, Looper.getMainLooper())
+    }
+
+    private fun stopIdleSpeedUpdates() {
+        idleSpeedCallback?.let { fusedLocationClient.removeLocationUpdates(it) }
+        idleSpeedCallback = null
+    }
 
     private fun enableMyLocation() {
         if (!::mapView.isInitialized) return
@@ -220,6 +261,7 @@ class Navigate : Fragment() {
     }
 
     private fun setupMap(view: View) {
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext())
         val mapStyle = getSavedMapStyle(requireContext())
         mapView.setTileSource(tileSourceFor(mapStyle))
         mapView.setMultiTouchControls(true)
@@ -272,6 +314,7 @@ class Navigate : Fragment() {
 
     private fun startRecording() {
         clearPolyline()
+        stopIdleSpeedUpdates()
         TrackRecordingService.isRecording = true
         btnRecord.text = "Stop Recording"
         btnOpenLibrary.visibility = View.GONE
@@ -287,6 +330,7 @@ class Navigate : Fragment() {
 
         val intent = Intent(requireContext(), TrackRecordingService::class.java)
         requireContext().stopService(intent)
+        startIdleSpeedUpdates()
     }
 
     private fun saveTrack(trackName: String) {
@@ -393,6 +437,7 @@ class Navigate : Fragment() {
             btnOpenLibrary.visibility = View.GONE
         } else {
             btnOpenLibrary.visibility = View.VISIBLE
+            if (!TrackNavigationService.isNavigating) startIdleSpeedUpdates()
         }
         LocalBroadcastManager.getInstance(requireContext())
             .registerReceiver(
@@ -409,6 +454,7 @@ class Navigate : Fragment() {
     override fun onPause() {
         super.onPause()
         mapView.onPause()
+        stopIdleSpeedUpdates()
         LocalBroadcastManager.getInstance(requireContext())
             .unregisterReceiver(trackUpdateReceiver)
         LocalBroadcastManager.getInstance(requireContext())
