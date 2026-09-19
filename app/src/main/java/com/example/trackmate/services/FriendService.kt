@@ -23,7 +23,7 @@ data class FriendRequestsResponse(
     val status: Boolean,
     val senderId: Int,
     val receiverId: Int,
-    val sender: FriendResponse
+    val sender: FriendResponse? = null
 )
 
 interface FriendService {
