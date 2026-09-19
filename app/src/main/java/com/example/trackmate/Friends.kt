@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.fragment.app.Fragment
@@ -19,6 +20,7 @@ import com.example.trackmate.services.AuthService
 import com.example.trackmate.services.FriendRequestAction
 import com.example.trackmate.services.FriendResponse
 import com.example.trackmate.services.FriendService
+import com.example.trackmate.services.ProfileService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -92,8 +94,8 @@ class FriendRequestsAdapter(
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val username: TextView = view.findViewById(R.id.usernameText)
         val userImage: ImageView = view.findViewById(R.id.userImage)
-        val accept: Button = view.findViewById(R.id.acceptButton)
-        val refuse: Button = view.findViewById(R.id.refuseButton)
+        val accept: ImageButton = view.findViewById(R.id.acceptButton)
+        val refuse: ImageButton = view.findViewById(R.id.refuseButton)
         val profile: Button = view.findViewById(R.id.openProfileButton)
     }
 
@@ -123,6 +125,7 @@ class Friends : Fragment() {
     private lateinit var friendsAdapter: FriendsAdapter
     private lateinit var api: FriendService
     private lateinit var authApi: AuthService
+    private lateinit var profileApi: ProfileService
     private val apiCallCoroutine = CoroutineScope(Dispatchers.IO)
 
     override fun onCreateView(
@@ -155,6 +158,7 @@ class Friends : Fragment() {
         friendsRecycler.adapter = friendsAdapter
         api = (activity as MainActivity).friendService
         authApi = (activity as MainActivity).authService
+        profileApi = (activity as MainActivity).profileService
         reloadData()
     }
 
@@ -172,15 +176,32 @@ class Friends : Fragment() {
                 val requests = api.getFriendRequests().body() ?: emptyList()
                 val friends = api.getFriends(currentId).body() ?: emptyList()
 
+                // The server doesn't always embed the sender object on a request row,
+                // so fall back to resolving it from senderId via the profile endpoint.
+                val requestSenders = requests.mapNotNull { request ->
+                    request.sender ?: try {
+                        profileApi.getProfile(request.senderId).body()?.let { profile ->
+                            FriendResponse(
+                                id = request.senderId,
+                                username = profile.username,
+                                level = profile.level
+                            )
+                        }
+                    } catch (e: Exception) {
+                        Log.d("API-ERROR", e.stackTraceToString())
+                        null
+                    }
+                }
+
                 withContext(Dispatchers.Main) {
-                    if (requests.isNotEmpty()) {
+                    if (requestSenders.isNotEmpty()) {
                         friendRequestsTitle.visibility = View.VISIBLE
                         friendRequestsRecycler.visibility = View.VISIBLE
                     } else {
                         friendRequestsTitle.visibility = View.GONE
                         friendRequestsRecycler.visibility = View.GONE
                     }
-                    requestsAdapter.submitList(requests.map { it.sender })
+                    requestsAdapter.submitList(requestSenders)
                     friendsAdapter.submitList(friends)
                 }
             } catch (e: Exception) {
