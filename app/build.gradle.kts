@@ -22,7 +22,7 @@ android {
 
     buildTypes {
         debug { // TODO "\"http://10.0.2.2:3000\""
-            buildConfigField("String", "BASE_URL", "\"https://backend.trackmate.alpha-hub.net\"")
+            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3000\"")
             buildConfigField("String", "STADIA_MAPS_API_KEY", "\"$stadiaMapsApiKey\"")
         }
         release {

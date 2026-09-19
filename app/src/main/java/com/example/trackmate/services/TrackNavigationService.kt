@@ -55,8 +55,10 @@ class TrackNavigationService : Service() {
     companion object {
         var isNavigating = false
         private var lastNavigationData: NewTravelRequest? = null
+        private var lastNavigationPoints: List<TrackPoint>? = null
         var trackId: Int = -1
         fun getLastNavigationData(): NewTravelRequest? = lastNavigationData
+        fun getLastNavigationPoints(): List<TrackPoint>? = lastNavigationPoints
     }
 
     override fun onCreate() {
@@ -303,6 +305,7 @@ class TrackNavigationService : Service() {
             currentTargetIndex = referenceTrackPoints.size
             isNavigating = false
             lastNavigationData = calculateTravelData()
+            lastNavigationPoints = calculateTravelPoints()
             updateHandler.removeCallbacks(updateRunnable)
             stopSelf()
         }
@@ -367,6 +370,18 @@ class TrackNavigationService : Service() {
         )
     }
 
+    private fun calculateTravelPoints(): List<TrackPoint> {
+        return navigationPath.mapIndexed { index, location ->
+            val prev = navigationPath.getOrNull(index - 1)
+            TrackPoint(
+                location.latitude,
+                location.longitude,
+                location.time,
+                currentSpeedMps(location, prev) * 3.6f
+            )
+        }
+    }
+
     override fun onDestroy() {
         locationCallback?.let { fusedLocationClient.removeLocationUpdates(it) }
 
@@ -375,6 +390,7 @@ class TrackNavigationService : Service() {
         updateHandler.post {
             if (!navigationCompleted) {
                 lastNavigationData = calculateTravelData()
+                lastNavigationPoints = calculateTravelPoints()
             }
             isNavigating = false
             trackId = -1

@@ -34,6 +34,11 @@ data class NewTravelRequest(
 )
 
 @JsonClass(generateAdapter = true)
+data class TravelId(
+    val id: Int
+)
+
+@JsonClass(generateAdapter = true)
 data class TrackItem(
     val id: Int,
     val name: String,
@@ -129,6 +134,21 @@ interface TrackService {
     @POST("track/travel")
     suspend fun createTravel(
         @Body data: NewTravelRequest,
+        @Query("lang") lang: String = "en"
+    ): Response<TravelId>
+
+    @Multipart
+    @POST("track/travel/file")
+    suspend fun uploadTravelFile(
+        @Part file: MultipartBody.Part,
+        @Query("id") id: Int,
+        @Query("lang") lang: String = "en"
+    ): Response<ResponseBody>
+
+    @GET("track/travel/file")
+    @Streaming
+    suspend fun getTravelFile(
+        @Query("id") id: Int,
         @Query("lang") lang: String = "en"
     ): Response<ResponseBody>
 

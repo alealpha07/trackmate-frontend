@@ -24,7 +24,8 @@ import java.util.Locale
 data class TrackPoint(
     @Json(name = "lat") val latitude: Double,
     @Json(name = "lng") val longitude: Double,
-    val timestamp: Long
+    val timestamp: Long,
+    val speed: Float = 0f // km/h
 )
 
 @JsonClass(generateAdapter = true)
@@ -128,6 +129,20 @@ class TrackRecordingService : Service() {
         )
     }
 
+    private fun speedAtPointKmh(prev: Location?, curr: Location): Float {
+        val speedMps = when {
+            curr.hasSpeed() -> curr.speed
+            prev != null -> {
+                val dt = (curr.time - prev.time) / 1000f
+                val accurateEnough = (!prev.hasAccuracy() || prev.accuracy <= MAX_ACCURACY_METERS) &&
+                    (!curr.hasAccuracy() || curr.accuracy <= MAX_ACCURACY_METERS)
+                if (accurateEnough && dt >= MIN_RELIABLE_DT_SECONDS) prev.distanceTo(curr) / dt else null
+            }
+            else -> null
+        }
+        return if (speedMps != null && speedMps <= MAX_PLAUSIBLE_SPEED_MPS) speedMps * 3.6f else 0f
+    }
+
     private fun saveToJsonAsync() {
         CoroutineScope(Dispatchers.IO).launch {
             val moshi = Moshi.Builder()
@@ -135,8 +150,10 @@ class TrackRecordingService : Service() {
                 .build()
             val adapter = moshi.adapter(Track::class.java)
 
-            val trackPointsList = pathPoints.map { (location, time) ->
-                TrackPoint(location.latitude, location.longitude, time)
+            val points = pathPoints
+            val trackPointsList = points.mapIndexed { index, (location, time) ->
+                val prev = points.getOrNull(index - 1)?.first
+                TrackPoint(location.latitude, location.longitude, time, speedAtPointKmh(prev, location))
             }
 
             val trackData = Track(trackPointsList)
