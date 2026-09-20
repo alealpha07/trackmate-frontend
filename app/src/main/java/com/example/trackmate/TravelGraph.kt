@@ -299,7 +299,6 @@ class TravelGraph : Fragment() {
             binding.speedLegendBar.visibility = View.GONE
             binding.txtSpeedMin.visibility = View.GONE
             binding.txtSpeedMax.visibility = View.GONE
-            binding.txtNoSpeedData.visibility = View.VISIBLE
             return
         }
 
@@ -307,7 +306,6 @@ class TravelGraph : Fragment() {
         binding.speedLegendBar.visibility = View.VISIBLE
         binding.txtSpeedMin.visibility = View.VISIBLE
         binding.txtSpeedMax.visibility = View.VISIBLE
-        binding.txtNoSpeedData.visibility = View.GONE
 
         val minSpeed = points.minOf { it.speed }
         val maxSpeed = points.maxOf { it.speed }
