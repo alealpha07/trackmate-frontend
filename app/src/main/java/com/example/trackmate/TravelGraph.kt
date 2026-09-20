@@ -6,6 +6,8 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.fragment.app.Fragment
@@ -22,12 +24,18 @@ import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.utils.ColorTemplate
+import com.squareup.moshi.Moshi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.osmdroid.util.BoundingBox
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.CustomZoomButtonsController
+import org.osmdroid.views.overlay.Polyline
 import java.text.SimpleDateFormat
 import java.util.Locale
+import kotlin.math.roundToInt
 
 class LeaderboardAdapter :
     ListAdapter<LeaderboardItem, LeaderboardAdapter.ViewHolder>(DiffCallback) {
@@ -71,6 +79,8 @@ class TravelGraph : Fragment() {
     private val apiCallCoroutine = CoroutineScope(Dispatchers.IO)
     private val args: TravelGraphArgs by navArgs()
 
+    private var myTravelsForMap: List<TravelItem> = emptyList()
+    private val speedMapPolylines = mutableListOf<Polyline>()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -88,10 +98,21 @@ class TravelGraph : Fragment() {
         leaderboardRecycler.layoutManager = LinearLayoutManager(requireContext())
         leaderboardAdapter = LeaderboardAdapter()
         leaderboardRecycler.adapter = leaderboardAdapter
+        initSpeedMapView()
 
         loadTrackDetails()
         loadTravels(binding.performanceChart, binding.barChart)
         loadLeaderboard()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        binding.speedMapView.onResume()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        binding.speedMapView.onPause()
     }
 
     private fun loadTrackDetails() {
@@ -136,6 +157,7 @@ class TravelGraph : Fragment() {
                                 formatter.parse(travel.dateTimeString)
                             }.filter{ it.userId == userId})
                             setupSpeedComparisonBarChart(barChart, travels, userId)
+                            setupSpeedMap(travels, userId)
                         }
                     }
                 }
@@ -209,6 +231,115 @@ class TravelGraph : Fragment() {
 
         chart.animateY(1000)
         chart.invalidate()
+    }
+
+    private fun initSpeedMapView() {
+        val mapView = binding.speedMapView
+        val mapStyle = getSavedMapStyle(requireContext())
+        mapView.setTileSource(tileSourceFor(mapStyle))
+        mapView.setMultiTouchControls(false)
+        mapView.zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
+        mapView.overlays.add(buildCopyrightOverlay(requireContext()))
+        mapView.setOnTouchListener { _, _ -> true }
+    }
+
+    private fun setupSpeedMap(travels: List<TravelItem>, userId: Int) {
+        myTravelsForMap = travels.filter { it.userId == userId }
+            .sortedByDescending { formatter.parse(it.dateTimeString) }
+
+        if (myTravelsForMap.isEmpty()) {
+            binding.spinnerTravels.adapter = null
+            renderSpeedMap(emptyList())
+            return
+        }
+
+        val labels = myTravelsForMap.map { "${it.dateTimeString} - ${formatTime(it.time)}" }
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, labels)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.spinnerTravels.adapter = adapter
+        binding.spinnerTravels.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                loadSpeedMapForTravel(myTravelsForMap[position].id)
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        loadSpeedMapForTravel(myTravelsForMap[0].id)
+    }
+
+    private fun loadSpeedMapForTravel(travelId: Int) {
+        apiCallCoroutine.launch {
+            val points = try {
+                val fileResponse = api.getTravelFile(travelId)
+                if (fileResponse.isSuccessful && fileResponse.body() != null) {
+                    val json = fileResponse.body()!!.string()
+                    val moshi = Moshi.Builder().build()
+                    moshi.adapter(Track::class.java).fromJson(json)?.track ?: emptyList()
+                } else {
+                    emptyList()
+                }
+            } catch (e: Exception) {
+                Log.e("API-ERROR", e.stackTraceToString())
+                emptyList()
+            }
+
+            withContext(Dispatchers.Main) {
+                renderSpeedMap(points)
+            }
+        }
+    }
+
+    private fun renderSpeedMap(points: List<TrackPoint>) {
+        val mapView = binding.speedMapView
+        speedMapPolylines.forEach { mapView.overlays.remove(it) }
+        speedMapPolylines.clear()
+
+        if (points.size < 2) {
+            mapView.visibility = View.GONE
+            binding.speedLegendBar.visibility = View.GONE
+            binding.txtSpeedMin.visibility = View.GONE
+            binding.txtSpeedMax.visibility = View.GONE
+            binding.txtNoSpeedData.visibility = View.VISIBLE
+            return
+        }
+
+        mapView.visibility = View.VISIBLE
+        binding.speedLegendBar.visibility = View.VISIBLE
+        binding.txtSpeedMin.visibility = View.VISIBLE
+        binding.txtSpeedMax.visibility = View.VISIBLE
+        binding.txtNoSpeedData.visibility = View.GONE
+
+        val minSpeed = points.minOf { it.speed }
+        val maxSpeed = points.maxOf { it.speed }
+        val range = (maxSpeed - minSpeed).takeIf { it > 0f } ?: 1f
+        val geoPoints = points.map { GeoPoint(it.latitude, it.longitude) }
+
+        for (i in 0 until points.size - 1) {
+            val t = (points[i].speed - minSpeed) / range
+            val segment = Polyline().apply {
+                setPoints(listOf(geoPoints[i], geoPoints[i + 1]))
+                outlinePaint.color = speedToColor(t)
+                outlinePaint.strokeWidth = 10f
+            }
+            mapView.overlays.add(segment)
+            speedMapPolylines.add(segment)
+        }
+
+        mapView.zoomToBoundingBox(BoundingBox.fromGeoPoints(geoPoints), false, 60)
+        mapView.invalidate()
+
+        binding.txtSpeedMin.text = "${minSpeed.roundToInt()} km/h"
+        binding.txtSpeedMax.text = "${maxSpeed.roundToInt()} km/h"
+    }
+
+    private fun speedToColor(t: Float): Int {
+        val clamped = t.coerceIn(0f, 1f)
+        val startColor = Color.parseColor("#4CAF50")
+        val endColor = Color.parseColor("#F44336")
+        val r = Color.red(startColor) + ((Color.red(endColor) - Color.red(startColor)) * clamped).roundToInt()
+        val g = Color.green(startColor) + ((Color.green(endColor) - Color.green(startColor)) * clamped).roundToInt()
+        val b = Color.blue(startColor) + ((Color.blue(endColor) - Color.blue(startColor)) * clamped).roundToInt()
+        return Color.rgb(r, g, b)
     }
 
     private fun loadLeaderboard() {
@@ -308,6 +439,7 @@ class TravelGraph : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        binding.speedMapView.onDetach()
         _binding = null
     }
 }
