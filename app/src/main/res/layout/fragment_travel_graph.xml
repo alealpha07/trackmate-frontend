@@ -119,19 +119,6 @@
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp" />
 
-        <TextView
-            android:id="@+id/txtNoSpeedData"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="No speed data recorded for this travel."
-            android:textSize="14sp"
-            android:gravity="center"
-            android:visibility="gone"
-            app:layout_constraintTop_toTopOf="@id/speedMapView"
-            app:layout_constraintBottom_toBottomOf="@id/speedMapView"
-            app:layout_constraintStart_toStartOf="@id/speedMapView"
-            app:layout_constraintEnd_toEndOf="@id/speedMapView" />
-
         <View
             android:id="@+id/speedLegendBar"
             android:layout_width="0dp"
