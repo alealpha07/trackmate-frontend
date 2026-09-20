@@ -88,13 +88,90 @@
             android:layout_margin="16dp" />
 
         <TextView
+            android:id="@+id/title_speed_map"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Speed Map"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:layout_constraintTop_toBottomOf="@id/performanceChart"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_margin="16dp" />
+
+        <Spinner
+            android:id="@+id/spinnerTravels"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@id/title_speed_map"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp" />
+
+        <org.osmdroid.views.MapView
+            android:id="@+id/speedMapView"
+            android:layout_width="0dp"
+            android:layout_height="220dp"
+            app:layout_constraintTop_toBottomOf="@id/spinnerTravels"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="8dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp" />
+
+        <TextView
+            android:id="@+id/txtNoSpeedData"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="No speed data recorded for this travel."
+            android:textSize="14sp"
+            android:gravity="center"
+            android:visibility="gone"
+            app:layout_constraintTop_toTopOf="@id/speedMapView"
+            app:layout_constraintBottom_toBottomOf="@id/speedMapView"
+            app:layout_constraintStart_toStartOf="@id/speedMapView"
+            app:layout_constraintEnd_toEndOf="@id/speedMapView" />
+
+        <View
+            android:id="@+id/speedLegendBar"
+            android:layout_width="0dp"
+            android:layout_height="14dp"
+            android:background="@drawable/gradient_speed_legend"
+            app:layout_constraintTop_toBottomOf="@id/speedMapView"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="12dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp" />
+
+        <TextView
+            android:id="@+id/txtSpeedMin"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-- km/h"
+            android:textSize="12sp"
+            app:layout_constraintTop_toBottomOf="@id/speedLegendBar"
+            app:layout_constraintStart_toStartOf="@id/speedLegendBar"
+            android:layout_marginTop="4dp" />
+
+        <TextView
+            android:id="@+id/txtSpeedMax"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-- km/h"
+            android:textSize="12sp"
+            app:layout_constraintTop_toBottomOf="@id/speedLegendBar"
+            app:layout_constraintEnd_toEndOf="@id/speedLegendBar"
+            android:layout_marginTop="4dp" />
+
+        <TextView
             android:id="@+id/title_leaderboard"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Leaderboard Top 10"
             android:textSize="16sp"
             android:textStyle="bold"
-            app:layout_constraintTop_toBottomOf="@id/performanceChart"
+            app:layout_constraintTop_toBottomOf="@id/txtSpeedMin"
             app:layout_constraintStart_toStartOf="parent"
             android:layout_margin="16dp" />
 
