@@ -381,12 +381,17 @@ class Navigate : Fragment() {
                             travelData.distance.toInt()
                         )
                     )
+                    travelResponse.body()?.id?.let { travelId ->
+                        val travelRequestFile = file.asRequestBody("application/json".toMediaTypeOrNull())
+                        val travelBody = MultipartBody.Part.createFormData("file", file.name, travelRequestFile)
+                        api.uploadTravelFile(travelBody, travelId)
+                    }
                 }
                 withContext(Dispatchers.Main) {
                     if (travelResponse.isSuccessful) {
                         Toast.makeText(
                             requireContext(),
-                            travelResponse.body()?.string() ?: "Success",
+                            "Track saved successfully!",
                             Toast.LENGTH_SHORT
                         ).show()
                     } else {

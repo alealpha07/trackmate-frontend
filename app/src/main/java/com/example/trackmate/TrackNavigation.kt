@@ -25,6 +25,9 @@ import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.roundToInt
@@ -589,6 +592,7 @@ class TrackNavigation : Fragment() {
                             1
                         )
                     )
+                    travelResponse.body()?.id?.let { travelId -> uploadTravelPoints(travelId) }
                 }
                 withContext(Dispatchers.Main) {
                     if (travelResponse.isSuccessful) {
@@ -608,6 +612,24 @@ class TrackNavigation : Fragment() {
             } catch (e: Exception) {
                 Log.d("API-ERROR", e.stackTraceToString())
             }
+        }
+    }
+
+    private suspend fun uploadTravelPoints(travelId: Int) {
+        val points = TrackNavigationService.getLastNavigationPoints() ?: return
+        try {
+            val moshi = com.squareup.moshi.Moshi.Builder().build()
+            val adapter = moshi.adapter(Track::class.java)
+            val json = adapter.toJson(Track(points))
+
+            val file = File(requireContext().filesDir, "travel_points.json")
+            file.writeText(json)
+
+            val requestFile = file.asRequestBody("application/json".toMediaTypeOrNull())
+            val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
+            api.uploadTravelFile(body, travelId)
+        } catch (e: Exception) {
+            Log.d("API-ERROR", e.stackTraceToString())
         }
     }
 }
