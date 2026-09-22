@@ -83,9 +83,6 @@ class TrackNavigationService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         trackId = intent?.getIntExtra("trackId", -1) ?: -1
 
-        // Must promote to a foreground service immediately: Android requires startForeground()
-        // to be called right after startForegroundService(), or the service gets killed once the
-        // app is backgrounded/screen off, before location updates ever start.
         startForegroundService()
 
         CoroutineScope(Dispatchers.IO).launch {
@@ -285,9 +282,8 @@ class TrackNavigationService : Service() {
             putExtra("offTrack", lastOffTrack)
             putExtra("isFinished", currentTargetIndex >= referenceTrackPoints.size)
             putExtra("speed", speedKmh)
-            referenceTrackPoints.getOrNull(currentTargetIndex)?.let {
-                putExtra("nextLat", it.latitude)
-                putExtra("nextLng", it.longitude)
+            if (location.hasBearing()) {
+                putExtra("bearing", location.bearing)
             }
         }
         LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(intent)

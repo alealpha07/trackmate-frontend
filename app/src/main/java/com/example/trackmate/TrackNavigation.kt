@@ -65,6 +65,7 @@ class TrackNavigation : Fragment() {
     private var offTrackShown = false
     private var navigationFinishHandled = false
     private var userIsInteracting = false
+    private var needsBearingSnap = false
 
     private val handler = Handler(Looper.getMainLooper())
     private val resumeFollowRunnable = Runnable { userIsInteracting = false }
@@ -134,7 +135,10 @@ class TrackNavigation : Fragment() {
 
     // Interpolates the map's position/rotation between successive GPS fixes so panning and
     // tilting read as continuous motion instead of a snap on every ~500ms location update.
-    private val motionAnimator = MapMotionAnimator { point, bearing -> onLocationFrame(point, bearing) }
+    private var motionAnimator = createMotionAnimator()
+
+    private fun createMotionAnimator() =
+        MapMotionAnimator { point, bearing -> onLocationFrame(point, bearing) }
 
     private val navigationUpdateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -146,8 +150,7 @@ class TrackNavigation : Fragment() {
             val isFinished = intent.getBooleanExtra("isFinished", false)
             val nearestIndex = intent.getIntExtra("nearestIndex", -1)
             val offTrack = intent.getBooleanExtra("offTrack", false)
-            val nextLat = intent.getDoubleExtra("nextLat", Double.NaN)
-            val nextLng = intent.getDoubleExtra("nextLng", Double.NaN)
+            val bearing = intent.getFloatExtra("bearing", Float.NaN)
             val speed = intent.getFloatExtra("speed", 0f)
 
             txtCurrentSpeed.text = "Speed: ${speed.roundToInt()} km/h"
@@ -158,17 +161,14 @@ class TrackNavigation : Fragment() {
                 val newPoint = GeoPoint(lat, lng)
                 pathPoints.add(newPoint)
 
-                val bearing = if (!nextLat.isNaN() && !nextLng.isNaN()) {
-                    android.location.Location("").apply {
-                        latitude = lat
-                        longitude = lng
-                    }.bearingTo(android.location.Location("").apply {
-                        latitude = nextLat
-                        longitude = nextLng
-                    })
-                } else null
+                val resolvedBearing = if (bearing.isNaN()) null else bearing
 
-                motionAnimator.animateTo(newPoint, bearing)
+                if (needsBearingSnap && resolvedBearing != null) {
+                    needsBearingSnap = false
+                    motionAnimator.snapTo(newPoint, resolvedBearing)
+                } else {
+                    motionAnimator.animateTo(newPoint, resolvedBearing)
+                }
             }
 
             if (nearestIndex >= 0 && referencePoints.isNotEmpty()) {
@@ -261,6 +261,10 @@ class TrackNavigation : Fragment() {
 
     private fun setupMap(view: View) {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext())
+        // Without this, detaching the view from its window (e.g. via forceMapViewRebind())
+        // makes osmdroid tear down the tile provider and clear all overlays permanently -
+        // it's meant for a real teardown, not a transient reattach.
+        mapView.setDestroyMode(false)
         val mapStyle = getSavedMapStyle(requireContext())
         mapView.setTileSource(tileSourceFor(mapStyle))
         mapView.setMultiTouchControls(true)
@@ -417,9 +421,26 @@ class TrackNavigation : Fragment() {
         btnRecord.isEnabled = true
     }
 
+    // Work around a rendering bug where mapOrientation keeps being updated correctly
+    // (verified: the value is set and reads back correctly on a shown, correctly-sized,
+    // hardware-accelerated view) but the MapView's rotation stops visually applying after
+    // the app is backgrounded and resumed. Removing and re-adding the view to its parent
+    // forces Android to fully tear down and rebuild its attachment/render state, rather than
+    // reusing whatever got stuck. Re-added at the same index/LayoutParams to preserve both
+    // z-order (it must stay drawn below the stats/buttons) and its ConstraintLayout constraints.
+    private fun forceMapViewRebind() {
+        val parent = mapView.parent as? ViewGroup ?: return
+        val index = parent.indexOfChild(mapView)
+        val layoutParams = mapView.layoutParams
+        parent.removeView(mapView)
+        parent.addView(mapView, index, layoutParams)
+    }
+
     override fun onResume() {
         super.onResume()
+        forceMapViewRebind()
         mapView.onResume()
+        motionAnimator = createMotionAnimator()
         if (TrackNavigationService.isNavigating) {
             if (args.trackId != TrackNavigationService.trackId){
                 stopNavigation()
@@ -431,6 +452,7 @@ class TrackNavigation : Fragment() {
                 txtCurrentSpeed.visibility = View.VISIBLE
                 btnRecord.text = "Cancel Navigation"
                 mapView.controller.setZoom(TRACKING_ZOOM_LEVEL)
+                needsBearingSnap = true
             }
         } else {
             startIdleSpeedUpdates()

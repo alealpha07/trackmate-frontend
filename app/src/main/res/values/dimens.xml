@@ -5,4 +5,6 @@
     <!-- Default screen margins, per the Android Design guidelines. -->
     <dimen name="fragment_horizontal_margin">16dp</dimen>
     <dimen name="fragment_vertical_margin">16dp</dimen>
+    <!-- Bottom padding for scrolling lists so the last item isn't hidden by the bottom nav bar. -->
+    <dimen name="list_bottom_nav_padding">96dp</dimen>
 </resources>
