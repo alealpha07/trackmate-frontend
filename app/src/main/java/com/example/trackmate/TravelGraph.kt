@@ -8,8 +8,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.activity.OnBackPressedCallback
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.doOnNextLayout
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.DiffUtil
@@ -32,6 +38,8 @@ import kotlinx.coroutines.withContext
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.CustomZoomButtonsController
+import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.Overlay
 import org.osmdroid.views.overlay.Polyline
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -80,7 +88,12 @@ class TravelGraph : Fragment() {
     private val args: TravelGraphArgs by navArgs()
 
     private var myTravelsForMap: List<TravelItem> = emptyList()
-    private val speedMapPolylines = mutableListOf<Polyline>()
+    private val speedMapOverlays = mutableListOf<Overlay>()
+    private var speedMapBounds: BoundingBox? = null
+    private var isSpeedMapFullscreen = false
+    private val exitFullscreenOnBack = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() = exitSpeedMapFullscreen()
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -235,12 +248,94 @@ class TravelGraph : Fragment() {
 
     private fun initSpeedMapView() {
         val mapView = binding.speedMapView
+        // The map gets reparented when toggling fullscreen; without this osmdroid would
+        // tear down the tile provider and overlays on the transient detach.
+        mapView.setDestroyMode(false)
         val mapStyle = getSavedMapStyle(requireContext())
         mapView.setTileSource(tileSourceFor(mapStyle))
-        mapView.setMultiTouchControls(false)
         mapView.zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
         mapView.overlays.add(buildCopyrightOverlay(requireContext()))
-        mapView.setOnTouchListener { _, _ -> true }
+        setSpeedMapInteractive(false)
+
+        binding.btnSpeedMapFullscreen.setOnClickListener {
+            if (isSpeedMapFullscreen) exitSpeedMapFullscreen() else enterSpeedMapFullscreen()
+        }
+        binding.btnSpeedMapZoomIn.setOnClickListener { mapView.controller.zoomIn() }
+        binding.btnSpeedMapZoomOut.setOnClickListener { mapView.controller.zoomOut() }
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, exitFullscreenOnBack)
+    }
+
+    private fun setSpeedMapInteractive(enabled: Boolean) {
+        val mapView = binding.speedMapView
+        mapView.setMultiTouchControls(enabled)
+        mapView.setOnTouchListener(if (enabled) null else View.OnTouchListener { _, _ -> true })
+        binding.btnSpeedMapZoomIn.isVisible = enabled
+        binding.btnSpeedMapZoomOut.isVisible = enabled
+    }
+
+    private fun enterSpeedMapFullscreen() {
+        if (isSpeedMapFullscreen) return
+        isSpeedMapFullscreen = true
+
+        val section = binding.speedMapSection
+        // Keep the inline slot's height so the page behind doesn't reflow
+        binding.speedMapSlot.minimumHeight = binding.speedMapSlot.height
+        binding.speedMapSlot.removeView(section)
+        binding.fullscreenContainer.addView(
+            section,
+            FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        )
+        binding.speedMapFrame.layoutParams = (binding.speedMapFrame.layoutParams as LinearLayout.LayoutParams).apply {
+            height = 0
+            weight = 1f
+        }
+        binding.speedMapFrame.isVisible = true
+        binding.fullscreenContainer.isVisible = true
+
+        setSystemChromeVisible(false)
+        setSpeedMapInteractive(true)
+        binding.btnSpeedMapFullscreen.setImageResource(R.drawable.ic_fullscreen_exit_24)
+        binding.btnSpeedMapFullscreen.contentDescription = "Exit fullscreen"
+        exitFullscreenOnBack.isEnabled = true
+        binding.speedMapView.doOnNextLayout { fitSpeedMapToTrack() }
+    }
+
+    private fun exitSpeedMapFullscreen() {
+        if (!isSpeedMapFullscreen) return
+        isSpeedMapFullscreen = false
+
+        val section = binding.speedMapSection
+        binding.fullscreenContainer.removeView(section)
+        binding.fullscreenContainer.isVisible = false
+        binding.speedMapSlot.addView(
+            section,
+            FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        )
+        binding.speedMapSlot.minimumHeight = 0
+        binding.speedMapFrame.layoutParams = (binding.speedMapFrame.layoutParams as LinearLayout.LayoutParams).apply {
+            height = (220 * resources.displayMetrics.density).roundToInt()
+            weight = 0f
+        }
+        binding.speedMapFrame.isVisible = speedMapBounds != null
+
+        setSystemChromeVisible(true)
+        setSpeedMapInteractive(false)
+        binding.btnSpeedMapFullscreen.setImageResource(R.drawable.ic_fullscreen_24)
+        binding.btnSpeedMapFullscreen.contentDescription = "Open fullscreen"
+        exitFullscreenOnBack.isEnabled = false
+        binding.speedMapView.doOnNextLayout { fitSpeedMapToTrack() }
+    }
+
+    private fun setSystemChromeVisible(visible: Boolean) {
+        val activity = requireActivity() as AppCompatActivity
+        activity.supportActionBar?.let { if (visible) it.show() else it.hide() }
+        activity.findViewById<View>(R.id.nav_view)?.isVisible = visible
+    }
+
+    private fun fitSpeedMapToTrack() {
+        val bounds = speedMapBounds ?: return
+        binding.speedMapView.zoomToBoundingBox(bounds, false, 60)
+        binding.speedMapView.invalidate()
     }
 
     private fun setupSpeedMap(travels: List<TravelItem>, userId: Int) {
@@ -291,21 +386,21 @@ class TravelGraph : Fragment() {
 
     private fun renderSpeedMap(points: List<TrackPoint>) {
         val mapView = binding.speedMapView
-        speedMapPolylines.forEach { mapView.overlays.remove(it) }
-        speedMapPolylines.clear()
+        speedMapOverlays.forEach { mapView.overlays.remove(it) }
+        speedMapOverlays.clear()
 
-        if (points.size < 2) {
-            mapView.visibility = View.GONE
-            binding.speedLegendBar.visibility = View.GONE
-            binding.txtSpeedMin.visibility = View.GONE
-            binding.txtSpeedMax.visibility = View.GONE
+        val hasTrack = points.size >= 2
+        // In fullscreen the frame stays so the exit button remains reachable
+        binding.speedMapFrame.isVisible = hasTrack || isSpeedMapFullscreen
+        mapView.isVisible = hasTrack
+        binding.speedLegendBar.isVisible = hasTrack
+        binding.txtSpeedMin.isVisible = hasTrack
+        binding.txtSpeedMax.isVisible = hasTrack
+
+        if (!hasTrack) {
+            speedMapBounds = null
             return
         }
-
-        mapView.visibility = View.VISIBLE
-        binding.speedLegendBar.visibility = View.VISIBLE
-        binding.txtSpeedMin.visibility = View.VISIBLE
-        binding.txtSpeedMax.visibility = View.VISIBLE
 
         val minSpeed = points.minOf { it.speed }
         val maxSpeed = points.maxOf { it.speed }
@@ -320,11 +415,24 @@ class TravelGraph : Fragment() {
                 outlinePaint.strokeWidth = 10f
             }
             mapView.overlays.add(segment)
-            speedMapPolylines.add(segment)
+            speedMapOverlays.add(segment)
         }
 
-        mapView.zoomToBoundingBox(BoundingBox.fromGeoPoints(geoPoints), false, 60)
-        mapView.invalidate()
+        // Neutral grey so the endpoints don't read as part of the green-to-red speed scale
+        val endpointColor = Color.parseColor("#424242")
+        listOf('A' to geoPoints.first(), 'B' to geoPoints.last()).forEach { (letter, point) ->
+            val marker = Marker(mapView).apply {
+                position = point
+                title = if (letter == 'A') "Start" else "Finish"
+                icon = createLetterMarkerIcon(requireContext(), letter, fillColor = endpointColor)
+                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+            }
+            mapView.overlays.add(marker)
+            speedMapOverlays.add(marker)
+        }
+
+        speedMapBounds = BoundingBox.fromGeoPoints(geoPoints)
+        fitSpeedMapToTrack()
 
         binding.txtSpeedMin.text = "${minSpeed.roundToInt()} km/h"
         binding.txtSpeedMax.text = "${maxSpeed.roundToInt()} km/h"
@@ -437,6 +545,10 @@ class TravelGraph : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        if (isSpeedMapFullscreen) {
+            isSpeedMapFullscreen = false
+            setSystemChromeVisible(true)
+        }
         binding.speedMapView.onDetach()
         _binding = null
     }

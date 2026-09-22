@@ -10,16 +10,20 @@ import android.graphics.drawable.Drawable
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
 
-fun createLetterMarkerIcon(context: Context, letter: Char, sizeDp: Int = 32): Drawable {
+fun createLetterMarkerIcon(
+    context: Context,
+    letter: Char,
+    sizeDp: Int = 32,
+    fillColor: Int = ContextCompat.getColor(
+        context,
+        com.google.android.material.R.color.design_default_color_primary
+    )
+): Drawable {
     val density = context.resources.displayMetrics.density
     val sizePx = (sizeDp * density).toInt()
     val bitmap = createBitmap(sizePx, sizePx)
     val canvas = Canvas(bitmap)
 
-    val fillColor = ContextCompat.getColor(
-        context,
-        com.google.android.material.R.color.design_default_color_primary
-    )
     val strokeWidth = 2f * density
 
     val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {

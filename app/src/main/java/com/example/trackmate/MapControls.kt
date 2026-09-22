@@ -37,7 +37,10 @@ fun computeOffset(from: GeoPoint, bearingDeg: Double, distanceMeters: Double): G
 }
 
 class MapMotionAnimator(
-    private val durationMs: Long = 450L,
+    // Matches the ~1s cadence of real GPS fixes (LocationRequest interval), minus a small
+    // buffer, so the glide runs continuously into the next fix instead of finishing early
+    // and sitting frozen for the remainder of the interval.
+    private val durationMs: Long = 950L,
     private val onFrame: (position: GeoPoint, bearing: Float) -> Unit
 ) {
     private var animator: ValueAnimator? = null
