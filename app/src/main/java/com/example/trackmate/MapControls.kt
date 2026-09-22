@@ -37,7 +37,8 @@ fun computeOffset(from: GeoPoint, bearingDeg: Double, distanceMeters: Double): G
 }
 
 class MapMotionAnimator(
-    private val durationMs: Long = 450L,
+    // about the GPS fix interval, so the glide doesn't stop early
+    private val durationMs: Long = 950L,
     private val onFrame: (position: GeoPoint, bearing: Float) -> Unit
 ) {
     private var animator: ValueAnimator? = null

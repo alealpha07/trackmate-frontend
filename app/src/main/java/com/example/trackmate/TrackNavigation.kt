@@ -66,6 +66,7 @@ class TrackNavigation : Fragment() {
     private var navigationFinishHandled = false
     private var userIsInteracting = false
     private var needsBearingSnap = false
+    private var isNavigatingUiActive = false
 
     private val handler = Handler(Looper.getMainLooper())
     private val resumeFollowRunnable = Runnable { userIsInteracting = false }
@@ -443,7 +444,10 @@ class TrackNavigation : Fragment() {
                 btnRecord.text = "Cancel Navigation"
                 mapView.controller.setZoom(TRACKING_ZOOM_LEVEL)
                 needsBearingSnap = true
+                isNavigatingUiActive = true
             }
+        } else if (isNavigatingUiActive) {
+            stopNavigation(true)
         } else {
             startIdleSpeedUpdates()
         }
@@ -518,6 +522,7 @@ class TrackNavigation : Fragment() {
 
             resetTravelledPath()
             navigationFinishHandled = false
+            isNavigatingUiActive = true
             stopIdleSpeedUpdates()
             TrackNavigationService.isNavigating = true
             statsLayout.visibility = View.GONE
@@ -547,6 +552,7 @@ class TrackNavigation : Fragment() {
 
     private fun endNavigation() {
         TrackNavigationService.isNavigating = false
+        isNavigatingUiActive = false
         btnRecord.text = "Start Navigation"
 
         txtDistance.text = "Distance: 0.00 km"
