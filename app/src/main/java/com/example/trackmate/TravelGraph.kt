@@ -1,6 +1,7 @@
 package com.example.trackmate
 
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -256,6 +257,14 @@ class TravelGraph : Fragment() {
         mapView.overlays.add(buildCopyrightOverlay(requireContext()))
         setSpeedMapInteractive(false)
 
+        // built in code, <gradient> only supports 3 stops
+        binding.speedLegendBar.background = GradientDrawable(
+            GradientDrawable.Orientation.LEFT_RIGHT,
+            speedColorStops
+        ).apply {
+            cornerRadius = resources.displayMetrics.density * 7f
+        }
+
         binding.btnSpeedMapFullscreen.setOnClickListener {
             if (isSpeedMapFullscreen) exitSpeedMapFullscreen() else enterSpeedMapFullscreen()
         }
@@ -394,6 +403,8 @@ class TravelGraph : Fragment() {
         mapView.isVisible = hasTrack
         binding.speedLegendBar.isVisible = hasTrack
         binding.txtSpeedMin.isVisible = hasTrack
+        binding.txtSpeedMark1.isVisible = hasTrack
+        binding.txtSpeedMark2.isVisible = hasTrack
         binding.txtSpeedMax.isVisible = hasTrack
 
         if (!hasTrack) {
@@ -434,16 +445,29 @@ class TravelGraph : Fragment() {
         fitSpeedMapToTrack()
 
         binding.txtSpeedMin.text = "${minSpeed.roundToInt()} km/h"
+        binding.txtSpeedMark1.text = "${(minSpeed + range / 3f).roundToInt()} km/h"
+        binding.txtSpeedMark2.text = "${(minSpeed + range * 2f / 3f).roundToInt()} km/h"
         binding.txtSpeedMax.text = "${maxSpeed.roundToInt()} km/h"
     }
 
+    // slowest to fastest, shared with the legend
+    private val speedColorStops = intArrayOf(
+        Color.parseColor("#000000"), // black: slowest
+        Color.parseColor("#2196F3"), // blue
+        Color.parseColor("#4CAF50"), // green
+        Color.parseColor("#F44336")  // red: fastest
+    )
+
     private fun speedToColor(t: Float): Int {
-        val clamped = t.coerceIn(0f, 1f)
-        val startColor = Color.parseColor("#4CAF50")
-        val endColor = Color.parseColor("#F44336")
-        val r = Color.red(startColor) + ((Color.red(endColor) - Color.red(startColor)) * clamped).roundToInt()
-        val g = Color.green(startColor) + ((Color.green(endColor) - Color.green(startColor)) * clamped).roundToInt()
-        val b = Color.blue(startColor) + ((Color.blue(endColor) - Color.blue(startColor)) * clamped).roundToInt()
+        val segmentCount = speedColorStops.size - 1
+        val scaled = t.coerceIn(0f, 1f) * segmentCount
+        val index = scaled.toInt().coerceIn(0, segmentCount - 1)
+        val localT = scaled - index
+        val startColor = speedColorStops[index]
+        val endColor = speedColorStops[index + 1]
+        val r = Color.red(startColor) + ((Color.red(endColor) - Color.red(startColor)) * localT).roundToInt()
+        val g = Color.green(startColor) + ((Color.green(endColor) - Color.green(startColor)) * localT).roundToInt()
+        val b = Color.blue(startColor) + ((Color.blue(endColor) - Color.blue(startColor)) * localT).roundToInt()
         return Color.rgb(r, g, b)
     }
 
