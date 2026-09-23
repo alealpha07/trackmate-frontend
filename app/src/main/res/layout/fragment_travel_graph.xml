@@ -186,31 +186,51 @@
                     android:id="@+id/speedLegendBar"
                     android:layout_width="match_parent"
                     android:layout_height="14dp"
-                    android:background="@drawable/gradient_speed_legend"
                     android:layout_marginTop="12dp" />
 
-                <FrameLayout
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp">
+                    android:layout_marginTop="4dp"
+                    android:orientation="horizontal">
 
                     <TextView
                         android:id="@+id/txtSpeedMin"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="start"
+                        android:gravity="start"
+                        android:text="-- km/h"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/txtSpeedMark1"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="-- km/h"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/txtSpeedMark2"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
                         android:text="-- km/h"
                         android:textSize="12sp" />
 
                     <TextView
                         android:id="@+id/txtSpeedMax"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="end"
+                        android:gravity="end"
                         android:text="-- km/h"
                         android:textSize="12sp" />
 
-                </FrameLayout>
+                </LinearLayout>
 
             </LinearLayout>
 
