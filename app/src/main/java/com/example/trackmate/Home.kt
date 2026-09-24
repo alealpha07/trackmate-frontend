@@ -9,8 +9,11 @@ import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.navigation.Navigation.findNavController
+import androidx.navigation.fragment.NavHostFragment
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
@@ -43,6 +46,7 @@ class FeedPostsAdapter(
         val userIcon: ImageView = view.findViewById(R.id.user_icon)
         val likeButton: ImageButton = view.findViewById(R.id.like_button)
         val saveButton: ImageButton = view.findViewById(R.id.save_button)
+        val shareButton: ImageButton = view.findViewById(R.id.share_button)
         val travelButton: ImageButton = view.findViewById(R.id.navigate_button)
         val likeCount: TextView = view.findViewById(R.id.like_count)
         val imageCarousel: ViewPager2 = view.findViewById(R.id.image_carousel)
@@ -125,6 +129,8 @@ class FeedPostsAdapter(
             val action = HomeDirections.actionHomeToTrackNavigation(post.trackId)
             findNavController(holder.itemView).navigate(action)
         }
+
+        holder.shareButton.setOnClickListener { sharePost(holder.itemView.context, post) }
 
         holder.likeButton.setOnClickListener {
             apiCallCoroutine.launch {
@@ -235,6 +241,44 @@ class Home : Fragment() {
         })
 
         return view
+    }
+
+    override fun onResume() {
+        super.onResume()
+        (activity as MainActivity).consumePendingSharedPostId()?.let { openSharedPost(it) }
+    }
+
+    private fun openSharedPost(postId: Int) {
+        apiCallCoroutine.launch {
+            try {
+                val response: Response<PostItem> = api.getPost(postId)
+                withContext(Dispatchers.Main) {
+                    if (!isAdded) return@withContext
+                    val post = response.body()
+                    if (!response.isSuccessful || post == null) {
+                        Toast.makeText(requireContext(), "This post is no longer available", Toast.LENGTH_SHORT).show()
+                        return@withContext
+                    }
+
+                    val navController = NavHostFragment.findNavController(this@Home)
+                    val dialogView = layoutInflater.inflate(R.layout.item_post, null)
+                    val dialog = AlertDialog.Builder(requireContext()).setView(dialogView).create()
+                    val openProfile = View.OnClickListener {
+                        dialog.dismiss()
+                        navController.navigate(HomeDirections.actionHomeToUserProfile(post.userId))
+                    }
+                    dialogView.findViewById<TextView>(R.id.username).setOnClickListener(openProfile)
+                    dialogView.findViewById<ImageView>(R.id.user_icon).setOnClickListener(openProfile)
+                    configurePostView(dialogView, post, activity as MainActivity) {
+                        dialog.dismiss()
+                        navController.navigate(HomeDirections.actionHomeToTrackNavigation(post.trackId))
+                    }
+                    dialog.show()
+                }
+            } catch (e: Exception) {
+                Log.d("API-ERROR", e.stackTraceToString())
+            }
+        }
     }
 
     private fun loadTrendingPosts(reset: Boolean) {

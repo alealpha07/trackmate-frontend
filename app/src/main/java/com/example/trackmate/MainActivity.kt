@@ -1,12 +1,14 @@
 package com.example.trackmate
 
 import android.content.Context
+import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.view.View
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.navigation.NavOptions
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
@@ -74,6 +76,11 @@ class MainActivity : AppCompatActivity() {
     lateinit var cookieJar: SessionCookieJar
 
     private lateinit var binding: ActivityMainBinding
+
+    // post id from a shared link, opened by Home
+    private var pendingSharedPostId: Int? = null
+
+    fun consumePendingSharedPostId(): Int? = pendingSharedPostId.also { pendingSharedPostId = null }
 
     private fun isNetworkAvailable(): Boolean {
         val connectivityManager = this.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -168,6 +175,26 @@ class MainActivity : AppCompatActivity() {
                 binding.navView.visibility = View.VISIBLE
             }
         }
+
+        // only on a fresh launch
+        if (savedInstanceState == null) pendingSharedPostId = parseSharedPostId(intent?.data)
+    }
+
+    // singleTask: shared link opened while the app is running
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        val postId = parseSharedPostId(intent.data) ?: return
+        pendingSharedPostId = postId
+
+        // still on the login screen, home opens it after login
+        val navController = findNavController(R.id.nav_host_fragment_activity_main)
+        if (navController.currentDestination?.id == R.id.loginRegister) return
+        // recreate Home so it opens the pending post
+        navController.navigate(
+            R.id.home,
+            null,
+            NavOptions.Builder().setPopUpTo(R.id.home, true).build()
+        )
     }
 
     override fun onSupportNavigateUp(): Boolean {

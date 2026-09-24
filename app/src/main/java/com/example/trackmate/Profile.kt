@@ -107,6 +107,7 @@ fun configurePostView(
         findViewById<TextView>(R.id.description).text = post.description
         findViewById<TextView>(R.id.post_title).text = post.title
         findViewById<ImageButton>(R.id.navigate_button).setOnClickListener { navigateCallback() }
+        findViewById<ImageButton>(R.id.share_button).setOnClickListener { sharePost(context, post) }
     }
 
     var postLiked = post.liked
