@@ -88,7 +88,11 @@ class TravelGraph : Fragment() {
     private val apiCallCoroutine = CoroutineScope(Dispatchers.IO)
     private val args: TravelGraphArgs by navArgs()
 
-    private var myTravelsForMap: List<TravelItem> = emptyList()
+    private var allTravels: List<TravelItem> = emptyList()
+    private var filterUserIds: List<Int> = emptyList()
+    private var selectedUserId: Int? = null
+    private var travelsForMap: List<TravelItem> = emptyList()
+    private var requestedSpeedMapTravelId: Int? = null
     private val speedMapOverlays = mutableListOf<Overlay>()
     private var speedMapBounds: BoundingBox? = null
     private var isSpeedMapFullscreen = false
@@ -114,8 +118,7 @@ class TravelGraph : Fragment() {
         leaderboardRecycler.adapter = leaderboardAdapter
         initSpeedMapView()
 
-        loadTrackDetails()
-        loadTravels(binding.performanceChart, binding.barChart)
+        loadTrackData()
         loadLeaderboard()
     }
 
@@ -129,24 +132,42 @@ class TravelGraph : Fragment() {
         binding.speedMapView.onPause()
     }
 
-    private fun loadTrackDetails() {
+    private fun showTrackDetails(trackDetails: TrackDetails) {
+        binding.txtTrackName.text = trackDetails.name
+
+        val trackLength = trackDetails.overallBest?.distance
+        binding.txtTrackLength.text = if (trackLength != null) {
+            "Length: ${"%.2f".format(trackLength)} km"
+        } else {
+            "Length: N/A"
+        }
+
+        binding.txtUserTravelCount.text =
+            "Your Travels: ${trackDetails.travelCount}"
+    }
+
+    private val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.ITALIAN)
+
+    private fun loadTrackData() {
         apiCallCoroutine.launch {
             try {
-                val response = api.getTrack(args.trackId)
+                // Track details carry the owner id, needed to pick the default user below
+                val trackResponse = api.getTrack(args.trackId)
+                val trackDetails = trackResponse.body().takeIf { trackResponse.isSuccessful }
+                if (trackDetails != null) {
+                    withContext(Dispatchers.Main) { showTrackDetails(trackDetails) }
+                }
+
+                val response = api.getTravelsByTrack(args.trackId)
                 if (response.isSuccessful && response.body() != null) {
-                    val trackDetails = response.body()!!
-                    withContext(Dispatchers.Main) {
-                        binding.txtTrackName.text = trackDetails.name
-
-                        val trackLength = trackDetails.overallBest?.distance
-                        binding.txtTrackLength.text = if (trackLength != null) {
-                            "Length: ${"%.2f".format(trackLength)} km"
-                        } else {
-                            "Length: N/A"
+                    val travels = response.body()!!
+                    val userResponse = authApi.getUser()
+                    if (userResponse.isSuccessful && userResponse.body() != null) {
+                        val userId = userResponse.body()!!.id
+                        withContext(Dispatchers.Main) {
+                            setupSpeedComparisonBarChart(binding.barChart, travels, userId)
+                            setupUserFilter(travels, userId, trackDetails?.ownerId)
                         }
-
-                        binding.txtUserTravelCount.text =
-                            "Your Travels: ${trackDetails.travelCount}"
                     }
                 }
             } catch (e: Exception) {
@@ -155,30 +176,51 @@ class TravelGraph : Fragment() {
         }
     }
 
-    private val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.ITALIAN)
+    private fun setupUserFilter(travels: List<TravelItem>, currentUserId: Int, ownerId: Int?) {
+        allTravels = travels
 
-    private fun loadTravels(lineChart: LineChart, barChart: BarChart) {
-        apiCallCoroutine.launch {
-            try {
-                val response = api.getTravelsByTrack(args.trackId)
-                if (response.isSuccessful && response.body() != null) {
-                    val travels = response.body()!!
-                    val userResponse = authApi.getUser()
-                    if (userResponse.isSuccessful && userResponse.body() != null) {
-                        val userId = userResponse.body()!!.id
-                        withContext(Dispatchers.Main) {
-                            setupTimeLineChart(lineChart, travels.sortedBy { travel ->
-                                formatter.parse(travel.dateTimeString)
-                            }.filter{ it.userId == userId})
-                            setupSpeedComparisonBarChart(barChart, travels, userId)
-                            setupSpeedMap(travels, userId)
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("API-ERROR", e.stackTraceToString())
-            }
+        val usernames = travels.associate { it.userId to (it.username ?: "User #${it.userId}") }
+        val userIds = usernames.keys.sortedWith(
+            compareBy<Int>({ it != ownerId }, { it != currentUserId }, { usernames[it]!!.lowercase() })
+        )
+        filterUserIds = userIds
+
+        if (userIds.isEmpty()) {
+            binding.titleUserFilter.isVisible = false
+            binding.spinnerUsers.isVisible = false
+            showDataForUser(null)
+            return
         }
+
+        val labels = userIds.map { id ->
+            val tags = listOfNotNull(
+                "owner".takeIf { id == ownerId },
+                "you".takeIf { id == currentUserId }
+            )
+            if (tags.isEmpty()) usernames[id]!! else "${usernames[id]} (${tags.joinToString(", ")})"
+        }
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, labels)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.spinnerUsers.adapter = adapter
+        binding.spinnerUsers.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                showDataForUser(filterUserIds[position])
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        showDataForUser(userIds[0])
+    }
+
+    private fun showDataForUser(userId: Int?) {
+        if (userId != null && userId == selectedUserId) return
+        selectedUserId = userId
+
+        val userTravels = allTravels.filter { it.userId == userId }
+        setupTimeLineChart(binding.performanceChart, userTravels.sortedBy { travel ->
+            formatter.parse(travel.dateTimeString)
+        })
+        setupSpeedMap(userTravels)
     }
 
     private fun setupSpeedComparisonBarChart(chart: BarChart, travels: List<TravelItem>, userId: Int) {
@@ -249,8 +291,6 @@ class TravelGraph : Fragment() {
 
     private fun initSpeedMapView() {
         val mapView = binding.speedMapView
-        // The map gets reparented when toggling fullscreen; without this osmdroid would
-        // tear down the tile provider and overlays on the transient detach.
         mapView.setDestroyMode(false)
         val mapStyle = getSavedMapStyle(requireContext())
         mapView.setTileSource(tileSourceFor(mapStyle))
@@ -258,8 +298,6 @@ class TravelGraph : Fragment() {
         mapView.overlays.add(buildCopyrightOverlay(requireContext()))
         setSpeedMapInteractive(false)
 
-        // Built in code, not XML, since <gradient> only supports 3 stops (start/center/end)
-        // and this needs 4 - keeps the legend bar in exact sync with speedToColor()'s stops.
         binding.speedLegendBar.background = GradientDrawable(
             GradientDrawable.Orientation.LEFT_RIGHT,
             speedColorStops
@@ -348,31 +386,33 @@ class TravelGraph : Fragment() {
         binding.speedMapView.invalidate()
     }
 
-    private fun setupSpeedMap(travels: List<TravelItem>, userId: Int) {
-        myTravelsForMap = travels.filter { it.userId == userId }
-            .sortedByDescending { formatter.parse(it.dateTimeString) }
+    private fun setupSpeedMap(userTravels: List<TravelItem>) {
+        travelsForMap = userTravels.sortedByDescending { formatter.parse(it.dateTimeString) }
 
-        if (myTravelsForMap.isEmpty()) {
+        if (travelsForMap.isEmpty()) {
+            requestedSpeedMapTravelId = null
             binding.spinnerTravels.adapter = null
             renderSpeedMap(emptyList())
             return
         }
 
-        val labels = myTravelsForMap.map { "${it.dateTimeString} - ${formatTime(it.time)}" }
+        val labels = travelsForMap.map { "${it.dateTimeString} - ${formatTime(it.time)}" }
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, labels)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.spinnerTravels.adapter = adapter
         binding.spinnerTravels.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                loadSpeedMapForTravel(myTravelsForMap[position].id)
+                loadSpeedMapForTravel(travelsForMap[position].id)
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
-        loadSpeedMapForTravel(myTravelsForMap[0].id)
+        loadSpeedMapForTravel(travelsForMap[0].id)
     }
 
     private fun loadSpeedMapForTravel(travelId: Int) {
+        if (travelId == requestedSpeedMapTravelId) return
+        requestedSpeedMapTravelId = travelId
         apiCallCoroutine.launch {
             val points = try {
                 val fileResponse = api.getTravelFile(travelId)
@@ -389,7 +429,7 @@ class TravelGraph : Fragment() {
             }
 
             withContext(Dispatchers.Main) {
-                renderSpeedMap(points)
+                if (travelId == requestedSpeedMapTravelId) renderSpeedMap(points)
             }
         }
     }
@@ -430,7 +470,6 @@ class TravelGraph : Fragment() {
             speedMapOverlays.add(segment)
         }
 
-        // Neutral grey so the endpoints don't read as part of the black-blue-green-red speed scale
         val endpointColor = Color.parseColor("#424242")
         listOf('A' to geoPoints.first(), 'B' to geoPoints.last()).forEach { (letter, point) ->
             val marker = Marker(mapView).apply {
@@ -452,7 +491,6 @@ class TravelGraph : Fragment() {
         binding.txtSpeedMax.text = "${maxSpeed.roundToInt()} km/h"
     }
 
-    // Slowest -> fastest. Shared with the legend bar's gradient so both always match exactly.
     private val speedColorStops = intArrayOf(
         Color.parseColor("#000000"), // black: slowest
         Color.parseColor("#2196F3"), // blue
@@ -490,6 +528,11 @@ class TravelGraph : Fragment() {
     }
 
     private fun setupTimeLineChart(chart: LineChart, travels: List<TravelItem>) {
+        if (travels.isEmpty()) {
+            chart.clear()
+            return
+        }
+
         val entries = travels.mapIndexed { index, travel ->
             Entry(index.toFloat(), travel.time)
         }
