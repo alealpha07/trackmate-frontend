@@ -59,6 +59,7 @@ class Navigate : Fragment() {
     private lateinit var btnRecord: Button
     private lateinit var btnOpenLibrary: Button
     private lateinit var myLocationOverlay: MyLocationNewOverlay
+    private lateinit var compass: MapCompassController
     private lateinit var txtDistance: TextView
     private lateinit var txtDuration: TextView
     private lateinit var txtCurrentSpeed: TextView
@@ -206,10 +207,12 @@ class Navigate : Fragment() {
         ensurePolyline().setPoints(displayedPoints)
 
         if (!userIsInteracting) {
+            // look-ahead follows the direction of travel
             val cameraTarget = computeOffset(point, bearing.toDouble(), 30.0)
-            mapView.mapOrientation = -bearing
+            mapView.mapOrientation = -compass.resolveBearing(bearing)
             mapView.controller.setCenter(cameraTarget)
         }
+        compass.syncButtonRotation()
         mapView.invalidate()
     }
 
@@ -271,6 +274,7 @@ class Navigate : Fragment() {
                 applyOverlayTextColor(style, txtDistance, txtDuration, txtCurrentSpeed)
             }
         )
+        compass = MapCompassController(mapView, view.findViewById(R.id.btnCompass))
 
         mapView.setOnTouchListener { _, event ->
             when (event.actionMasked) {
@@ -303,6 +307,7 @@ class Navigate : Fragment() {
         TrackRecordingService.isRecording = true
         btnRecord.text = "Stop Recording"
         btnOpenLibrary.visibility = View.GONE
+        compass.setActive(true)
         mapView.controller.setZoom(TRACKING_ZOOM_LEVEL)
 
         val intent = Intent(requireContext(), TrackRecordingService::class.java)
@@ -313,6 +318,7 @@ class Navigate : Fragment() {
         TrackRecordingService.isRecording = false
         btnRecord.text = "Start Recording"
         btnOpenLibrary.visibility = View.VISIBLE
+        compass.setActive(false)
 
         val intent = Intent(requireContext(), TrackRecordingService::class.java)
         requireContext().stopService(intent)
@@ -413,6 +419,7 @@ class Navigate : Fragment() {
             findNavController().navigate(action)
         }
         mapView.onResume()
+        compass.setActive(TrackRecordingService.isRecording)
         if (TrackRecordingService.isRecording) {
             mapView.controller.setZoom(TRACKING_ZOOM_LEVEL)
             val recordedPoints = TrackRecordingService.pathPoints
