@@ -62,6 +62,19 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
+        <!-- Only shown while navigating, when the map rotates with the direction of travel -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnCompass"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:contentDescription="Lock map to north"
+            android:visibility="gone"
+            app:fabSize="mini"
+            app:srcCompat="@drawable/ic_compass_needle_24"
+            app:tint="@null"
+            app:backgroundTint="@android:color/white" />
+
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/btnLayers"
             android:layout_width="wrap_content"
