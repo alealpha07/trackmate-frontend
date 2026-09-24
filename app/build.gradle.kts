@@ -16,6 +16,8 @@ android {
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Host of shared post links (https://<host>/p/<id>) that open in the app; must match BASE_URL
+        manifestPlaceholders["sharedLinkHost"] = "backend.trackmate.alpha-hub.net"
     }
 
     val stadiaMapsApiKey = (project.findProperty("STADIA_MAPS_API_KEY") as? String) ?: ""

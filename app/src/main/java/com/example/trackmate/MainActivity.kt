@@ -1,12 +1,14 @@
 package com.example.trackmate
 
 import android.content.Context
+import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.view.View
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.navigation.NavOptions
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
@@ -74,6 +76,11 @@ class MainActivity : AppCompatActivity() {
     lateinit var cookieJar: SessionCookieJar
 
     private lateinit var binding: ActivityMainBinding
+
+    // Post id from a shared link, held until Home opens it (after login if needed)
+    private var pendingSharedPostId: Int? = null
+
+    fun consumePendingSharedPostId(): Int? = pendingSharedPostId.also { pendingSharedPostId = null }
 
     private fun isNetworkAvailable(): Boolean {
         val connectivityManager = this.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -168,6 +175,26 @@ class MainActivity : AppCompatActivity() {
                 binding.navView.visibility = View.VISIBLE
             }
         }
+
+        // Only on a fresh launch, so a recreated activity doesn't reopen an already seen post
+        if (savedInstanceState == null) pendingSharedPostId = parseSharedPostId(intent?.data)
+    }
+
+    // singleTask: a shared link opened while the app is running lands here
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        val postId = parseSharedPostId(intent.data) ?: return
+        pendingSharedPostId = postId
+
+        // Still on the login screen: it goes to Home after login, which opens the post then
+        val navController = findNavController(R.id.nav_host_fragment_activity_main)
+        if (navController.currentDestination?.id == R.id.loginRegister) return
+        // Recreate Home so it picks up the pending post in onResume
+        navController.navigate(
+            R.id.home,
+            null,
+            NavOptions.Builder().setPopUpTo(R.id.home, true).build()
+        )
     }
 
     override fun onSupportNavigateUp(): Boolean {
