@@ -58,7 +58,9 @@ data class TravelItem(
     val dateTimeString: String,
     val maxSpeed: Float,
     val averageSpeed: Float,
-    val distance: Float
+    val distance: Float,
+    // Only sent by track/travel/details
+    val username: String? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -81,6 +83,7 @@ data class TravelStatistics(
 data class TrackDetails(
     val id: Int,
     val name: String,
+    val ownerId: Int? = null,
     val travelCount: Int,
     val userBest: TravelStatistics?,
     val overallBest: TravelStatistics?
