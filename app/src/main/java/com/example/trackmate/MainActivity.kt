@@ -26,6 +26,9 @@ import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import androidx.core.content.edit
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.isVisible
 import com.example.trackmate.services.*
 import okhttp3.Cache
 import okhttp3.Interceptor
@@ -176,8 +179,33 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        hideBottomNavWhileTyping()
+
         // Only on a fresh launch, so a recreated activity doesn't reopen an already seen post
         if (savedInstanceState == null) pendingSharedPostId = parseSharedPostId(intent?.data)
+    }
+
+    // With adjustResize the bottom nav would ride on top of the keyboard and eat the space
+    // left for the field being edited, so it steps aside while the keyboard is open
+    private fun hideBottomNavWhileTyping() {
+        var keyboardOpen = false
+        var navHiddenForKeyboard = false
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+            val open = insets.isVisible(WindowInsetsCompat.Type.ime())
+            // Insets are dispatched for many reasons; only act when the keyboard toggles
+            if (open != keyboardOpen) {
+                keyboardOpen = open
+                if (open) {
+                    navHiddenForKeyboard = binding.navView.isVisible
+                    binding.navView.isVisible = false
+                } else if (navHiddenForKeyboard) {
+                    // Restore only what we hid, e.g. not on the login screen
+                    navHiddenForKeyboard = false
+                    binding.navView.isVisible = true
+                }
+            }
+            ViewCompat.onApplyWindowInsets(view, insets)
+        }
     }
 
     // singleTask: a shared link opened while the app is running lands here

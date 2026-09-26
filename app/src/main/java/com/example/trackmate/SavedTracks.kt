@@ -152,7 +152,7 @@ class SavedTracks : Fragment() {
                 }
             }
             .setNegativeButton("Cancel", null)
-            .show()
+            .showAboveKeyboard()
     }
 
     private fun deleteTrack(track: TrackItem) {

@@ -174,7 +174,7 @@ class Navigate : Fragment() {
                     saveTrack(editText.text.toString())
                 }
                 .setNegativeButton("Discard", null)
-                .show()
+                .showAboveKeyboard()
         }
     }
 

@@ -303,7 +303,7 @@ class Profile : Fragment() {
                                 }
                             }
                             .setNegativeButton("Cancel", null)
-                            .show()
+                            .showAboveKeyboard()
                     }
                     negativeButton.setOnClickListener {
                         AlertDialog.Builder(requireContext())
