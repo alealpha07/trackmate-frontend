@@ -58,7 +58,7 @@ class Navigate : Fragment() {
     private lateinit var mapView: MapView
     private lateinit var btnRecord: Button
     private lateinit var btnOpenLibrary: Button
-    private lateinit var myLocationOverlay: MyLocationNewOverlay
+    private lateinit var myLocationOverlay: AnimatedMyLocationOverlay
     private lateinit var compass: MapCompassController
     private lateinit var txtDistance: TextView
     private lateinit var txtDuration: TextView
@@ -208,6 +208,8 @@ class Navigate : Fragment() {
 
         val displayedPoints = if (pathPoints.isNotEmpty()) pathPoints.dropLast(1) + point else listOf(point)
         ensurePolyline().setPoints(displayedPoints)
+        // Keep the cursor on the tip of the animated polyline instead of the raw GPS fix
+        myLocationOverlay.setAnimatedPosition(point, bearing)
 
         if (!userIsInteracting) {
             // The look-ahead offset follows the direction of travel even when locked north
@@ -261,7 +263,7 @@ class Navigate : Fragment() {
 
         mapView.overlays.add(buildCopyrightOverlay(requireContext()))
 
-        myLocationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(requireContext()), mapView)
+        myLocationOverlay = AnimatedMyLocationOverlay(GpsMyLocationProvider(requireContext()), mapView)
         applyPrimaryLocationIcons(requireContext(), myLocationOverlay)
         mapView.overlays.add(myLocationOverlay)
 
@@ -311,6 +313,7 @@ class Navigate : Fragment() {
         btnRecord.text = "Stop Recording"
         btnOpenLibrary.visibility = View.GONE
         compass.setActive(true)
+        myLocationOverlay.followsAnimation = true
         mapView.controller.setZoom(TRACKING_ZOOM_LEVEL)
 
         val intent = Intent(requireContext(), TrackRecordingService::class.java)
@@ -322,6 +325,7 @@ class Navigate : Fragment() {
         btnRecord.text = "Start Recording"
         btnOpenLibrary.visibility = View.VISIBLE
         compass.setActive(false)
+        myLocationOverlay.followsAnimation = false
 
         val intent = Intent(requireContext(), TrackRecordingService::class.java)
         requireContext().stopService(intent)
@@ -423,6 +427,7 @@ class Navigate : Fragment() {
         }
         mapView.onResume()
         compass.setActive(TrackRecordingService.isRecording)
+        myLocationOverlay.followsAnimation = TrackRecordingService.isRecording
         if (TrackRecordingService.isRecording) {
             mapView.controller.setZoom(TRACKING_ZOOM_LEVEL)
             val recordedPoints = TrackRecordingService.pathPoints

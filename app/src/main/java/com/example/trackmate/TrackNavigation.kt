@@ -43,7 +43,7 @@ fun formatTime(seconds: Float): String {
 class TrackNavigation : Fragment() {
 
     private lateinit var mapView: MapView
-    private lateinit var myLocationOverlay: MyLocationNewOverlay
+    private lateinit var myLocationOverlay: AnimatedMyLocationOverlay
     private lateinit var compass: MapCompassController
     private lateinit var btnRecord: Button
     private lateinit var txtDistance: TextView
@@ -212,6 +212,8 @@ class TrackNavigation : Fragment() {
 
     private fun onLocationFrame(point: GeoPoint, bearing: Float) {
         if (!::mapView.isInitialized) return
+        // Keep the cursor in step with the animated camera instead of the raw GPS fix
+        myLocationOverlay.setAnimatedPosition(point, bearing)
 
         if (!userIsInteracting) {
             // The look-ahead offset follows the direction of travel even when locked north
@@ -277,7 +279,7 @@ class TrackNavigation : Fragment() {
 
         mapView.overlays.add(buildCopyrightOverlay(requireContext()))
 
-        myLocationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(requireContext()), mapView)
+        myLocationOverlay = AnimatedMyLocationOverlay(GpsMyLocationProvider(requireContext()), mapView)
         applyPrimaryLocationIcons(requireContext(), myLocationOverlay)
         mapView.overlays.add(myLocationOverlay)
 
@@ -460,6 +462,7 @@ class TrackNavigation : Fragment() {
                 needsBearingSnap = true
                 isNavigatingUiActive = true
                 compass.setActive(true)
+                myLocationOverlay.followsAnimation = true
             }
         } else if (isNavigatingUiActive) {
             stopNavigation(true)
@@ -543,6 +546,7 @@ class TrackNavigation : Fragment() {
             statsLayout.visibility = View.GONE
             btnRecord.text = "Cancel Navigation"
             compass.setActive(true)
+            myLocationOverlay.followsAnimation = true
             mapView.controller.setZoom(TRACKING_ZOOM_LEVEL)
 
             val sourceFile = File(requireContext().filesDir, "navigation.json")
@@ -571,6 +575,7 @@ class TrackNavigation : Fragment() {
         isNavigatingUiActive = false
         btnRecord.text = "Start Navigation"
         compass.setActive(false)
+        myLocationOverlay.followsAnimation = false
 
         txtDistance.text = "Distance: 0.00 km"
         txtDuration.text = "Duration: 0:0:0"
