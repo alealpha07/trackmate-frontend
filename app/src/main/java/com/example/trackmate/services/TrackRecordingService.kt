@@ -186,15 +186,9 @@ class TrackRecordingService : Service() {
                 intent.putExtra("bearing", lastLocation.bearing)
             }
 
-            val speedKmh = if (pathPoints.size >= 2) {
-                val (prevLoc, prevTime) = pathPoints[pathPoints.size - 2]
-                val dt = (System.currentTimeMillis() - prevTime) / 1000.0 // seconds
-                if (dt > 0) {
-                    val distance = prevLoc.distanceTo(lastLocation) // meters
-                    (distance / dt * 3.6).toFloat() // km/h
-                } else 0f
-            } else 0f
-            intent.putExtra("speed", speedKmh)
+            // Same per-fix speed as the saved track: GPS-reported speed, else distance/time between fixes
+            val prevLocation = pathPoints.getOrNull(pathPoints.size - 2)?.first
+            intent.putExtra("speed", speedAtPointKmh(prevLocation, lastLocation))
         }
 
         LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(intent)
