@@ -26,6 +26,9 @@ import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import androidx.core.content.edit
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.isVisible
 import com.example.trackmate.services.*
 import okhttp3.Cache
 import okhttp3.Interceptor
@@ -176,8 +179,32 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        hideBottomNavWhileTyping()
+
         // only on a fresh launch
         if (savedInstanceState == null) pendingSharedPostId = parseSharedPostId(intent?.data)
+    }
+
+    // hide the bottom nav while the keyboard is open
+    private fun hideBottomNavWhileTyping() {
+        var keyboardOpen = false
+        var navHiddenForKeyboard = false
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+            val open = insets.isVisible(WindowInsetsCompat.Type.ime())
+            // only when the keyboard toggles
+            if (open != keyboardOpen) {
+                keyboardOpen = open
+                if (open) {
+                    navHiddenForKeyboard = binding.navView.isVisible
+                    binding.navView.isVisible = false
+                } else if (navHiddenForKeyboard) {
+                    // restore only what we hid
+                    navHiddenForKeyboard = false
+                    binding.navView.isVisible = true
+                }
+            }
+            ViewCompat.onApplyWindowInsets(view, insets)
+        }
     }
 
     // singleTask: shared link opened while the app is running
