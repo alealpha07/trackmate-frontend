@@ -1,6 +1,8 @@
 package com.example.trackmate
 
 import android.content.Context
+import android.graphics.drawable.Drawable
+import android.graphics.drawable.LayerDrawable
 import android.util.Log
 import android.view.View
 import android.widget.ImageView
@@ -8,6 +10,7 @@ import android.widget.TextView
 import androidx.annotation.DrawableRes
 import androidx.annotation.IdRes
 import androidx.annotation.StringRes
+import androidx.core.content.ContextCompat
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.example.trackmate.services.ProfileService
 import com.google.android.material.chip.ChipGroup
@@ -26,6 +29,22 @@ enum class Vehicle(
     FOOT("foot", "foot", R.string.vehicle_foot, R.drawable.ic_vehicle_foot_24, R.id.btnVehicleFoot);
 
     val classVehicles: List<Vehicle> get() = entries.filter { it.vehicleClass == vehicleClass }
+
+    private val classOrder: List<Vehicle> get() = listOf(this) + (classVehicles - this)
+
+    fun classLabel(context: Context): String {
+        val names = classOrder.map { context.getString(it.label) }
+        return if (names.size == 2) context.getString(R.string.vehicle_or, names[0], names[1]) else names[0]
+    }
+
+    fun classIcon(context: Context): Drawable {
+        val icons = classOrder.map { ContextCompat.getDrawable(context, it.icon)!!.mutate() }
+        if (icons.size == 1) return icons[0]
+        val step = icons[0].intrinsicWidth + (4 * context.resources.displayMetrics.density).toInt()
+        return LayerDrawable(icons.toTypedArray()).apply {
+            icons.indices.forEach { i -> setLayerInset(i, i * step, 0, (icons.size - 1 - i) * step, 0) }
+        }
+    }
 
     companion object {
         private const val PREFS_NAME = "vehicle_prefs"
@@ -91,8 +110,8 @@ enum class Vehicle(
 fun TextView.showTrackVehicle(vehicle: Vehicle?) {
     visibility = if (vehicle == null) View.GONE else View.VISIBLE
     vehicle ?: return
-    text = context.getString(R.string.vehicle_label, context.getString(vehicle.label))
-    setCompoundDrawablesRelativeWithIntrinsicBounds(vehicle.icon, 0, 0, 0)
+    text = context.getString(R.string.vehicle_label, vehicle.classLabel(context))
+    setCompoundDrawablesRelativeWithIntrinsicBounds(vehicle.classIcon(context), null, null, null)
 }
 
 fun ImageView.bindVehicle(vehicle: Vehicle?) {
@@ -113,8 +132,4 @@ fun ChipGroup.bindVehicleChips(trackVehicle: Vehicle, onSelected: (Vehicle) -> U
         checkedIds.firstOrNull()?.let { VEHICLE_CHIPS[it] }?.let(onSelected)
     }
     onSelected(trackVehicle)
-}
-
-fun ChipGroup.selectVehicle(vehicle: Vehicle) {
-    VEHICLE_CHIPS.entries.firstOrNull { it.value == vehicle }?.let { check(it.key) }
 }
