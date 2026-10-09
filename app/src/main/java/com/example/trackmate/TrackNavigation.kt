@@ -15,6 +15,8 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.fragment.navArgs
 import com.example.trackmate.services.*
 import com.google.android.gms.location.*
+import com.google.android.material.button.MaterialButtonToggleGroup
+import com.google.android.material.chip.ChipGroup
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.navigation.fragment.findNavController
 import kotlinx.coroutines.*
@@ -49,6 +51,7 @@ class TrackNavigation : Fragment() {
     private lateinit var txtDistance: TextView
     private lateinit var txtDuration: TextView
     private lateinit var txtTrackName: TextView
+    private lateinit var txtTrackVehicle: TextView
     private lateinit var txtTrackLength: TextView
     private lateinit var txtUserBest: TextView
     private lateinit var txtUserBestAvg: TextView
@@ -56,6 +59,16 @@ class TrackNavigation : Fragment() {
     private lateinit var statsLayout: LinearLayout
     private lateinit var txtCurrentSpeed: TextView
     private lateinit var btnMoreDetails: Button
+    private lateinit var vehicleChips: ChipGroup
+    private lateinit var txtVehicleMissing: TextView
+    private lateinit var travelVehicleSection: View
+    private lateinit var travelVehicleToggle: MaterialButtonToggleGroup
+    // Known once the track details load
+    private var trackVehicle: Vehicle? = null
+    // The vehicle navigated with: one of the track's class in the user's profile
+    private var travelVehicle: Vehicle? = null
+    // The vehicle whose bests were last asked for, so an older answer doesn't overwrite them
+    private var bestsVehicle: Vehicle? = null
 
     private var referencePolyline: Polyline? = null
     private var passedPolyline: Polyline? = null
@@ -75,6 +88,7 @@ class TrackNavigation : Fragment() {
     private val apiCallCoroutine = CoroutineScope(Dispatchers.IO)
     private lateinit var api: TrackService
     private lateinit var questApi: QuestService
+    private lateinit var profileApi: ProfileService
     private val args: TrackNavigationArgs by navArgs()
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -240,6 +254,7 @@ class TrackNavigation : Fragment() {
         mapView = view.findViewById(R.id.mapView)
         btnRecord = view.findViewById(R.id.btnRecord)
         txtTrackName = view.findViewById(R.id.txtTrackName)
+        txtTrackVehicle = view.findViewById(R.id.txtTrackVehicle)
         txtTrackLength = view.findViewById(R.id.txtTrackLength)
         txtUserBest = view.findViewById(R.id.txtUserBest)
         txtUserBestAvg = view.findViewById(R.id.txtUserBestAvg)
@@ -249,9 +264,14 @@ class TrackNavigation : Fragment() {
         statsLayout = view.findViewById(R.id.statsLayout)
         txtCurrentSpeed = view.findViewById(R.id.txtCurrentSpeed)
         btnMoreDetails = view.findViewById(R.id.btnMoreDetails)
+        vehicleChips = view.findViewById(R.id.vehicleChips)
+        txtVehicleMissing = view.findViewById(R.id.txtVehicleMissing)
+        travelVehicleSection = view.findViewById(R.id.travelVehicleSection)
+        travelVehicleToggle = view.findViewById(R.id.travelVehicleToggle)
 
         api = (requireActivity() as MainActivity).trackService
         questApi = (requireActivity() as MainActivity).questService
+        profileApi = (requireActivity() as MainActivity).profileService
 
         setupMap(view)
 
@@ -341,12 +361,15 @@ class TrackNavigation : Fragment() {
                 val response = api.getTrack(args.trackId)
                 if (response.isSuccessful && response.body() != null) {
                     val details = response.body()!!
+                    val vehicle = Vehicle.fromId(details.vehicle)
+                    val profile = Vehicle.loadProfile(requireContext().applicationContext, profileApi)
                     withContext(Dispatchers.Main) {
                         txtTrackName.text = details.name
-                        details.userBest?.let {
-                            txtUserBest.text = "Your Best Time: ${formatTime(it.time)}"
-                            txtUserBestAvg.text = "Your Best Avg Speed: ${it.averageSpeed} km/h"
-                            txtUserBestSpd.text = "Your Best Speed: ${it.maxSpeed} km/h"
+                        txtTrackVehicle.showTrackVehicle(vehicle)
+                        trackVehicle = vehicle
+                        vehicle?.let {
+                            vehicleChips.bindVehicleChips(it) { selected -> loadBests(selected) }
+                            bindTravelVehicle(it, profile)
                         }
                     }
                 }
@@ -358,6 +381,61 @@ class TrackNavigation : Fragment() {
                     }
                 }
 
+            } catch (e: Exception) {
+                Log.d("API-ERROR", e.stackTraceToString())
+            }
+        }
+    }
+
+    /**
+     * The travel's vehicle: the profile's vehicles of the track's class, the last used preselected. Car and motorcycle
+     * tracks offer a choice when both are in the profile; with none, Start stays disabled.
+     */
+    private fun bindTravelVehicle(trackVehicle: Vehicle, profile: List<Vehicle>) {
+        val buttons = mapOf(Vehicle.CAR to R.id.btnTravelCar, Vehicle.MOTORCYCLE to R.id.btnTravelMotorcycle)
+        val offered = trackVehicle.classVehicles.filter { it in profile }
+        val lastUsed = Vehicle.lastUsed(requireContext())
+        travelVehicle = offered.firstOrNull { it == lastUsed } ?: offered.firstOrNull()
+
+        val classNames = trackVehicle.classVehicles.map { getString(it.label) }
+        txtVehicleMissing.text = getString(
+            R.string.navigate_vehicle_missing,
+            if (classNames.size == 2) getString(R.string.vehicle_or, classNames[0], classNames[1]) else classNames[0]
+        )
+        txtVehicleMissing.visibility = if (offered.isEmpty()) View.VISIBLE else View.GONE
+
+        travelVehicleSection.visibility = if (offered.size > 1) View.VISIBLE else View.GONE
+        travelVehicleToggle.clearOnButtonCheckedListeners()
+        travelVehicle?.let { vehicle -> buttons[vehicle]?.let { travelVehicleToggle.check(it) } }
+        travelVehicleToggle.addOnButtonCheckedListener { _, buttonId, checked ->
+            if (!checked) return@addOnButtonCheckedListener
+            travelVehicle = buttons.entries.first { it.value == buttonId }.key
+            // Show the bests of the vehicle about to be navigated with
+            vehicleChips.selectVehicle(travelVehicle!!)
+        }
+        travelVehicle?.let { vehicleChips.selectVehicle(it) }
+        updateStartButton()
+    }
+
+    private fun updateStartButton() {
+        // Without the track's details the server takes the track's vehicle for the travel
+        btnRecord.isEnabled = TrackNavigationService.isNavigating ||
+            (referencePoints.isNotEmpty() && (trackVehicle == null || travelVehicle != null))
+    }
+
+    /** The user's bests with [vehicle]: stats are split by vehicle. */
+    private fun loadBests(vehicle: Vehicle) {
+        bestsVehicle = vehicle
+        apiCallCoroutine.launch {
+            try {
+                val response = api.getTrack(args.trackId, vehicle.id)
+                val best = response.body()?.userBest.takeIf { response.isSuccessful }
+                withContext(Dispatchers.Main) {
+                    if (!isAdded || bestsVehicle != vehicle) return@withContext
+                    txtUserBest.text = "Your Best Time: ${best?.let { formatTime(it.time) } ?: "-"}"
+                    txtUserBestAvg.text = "Your Best Avg Speed: ${best?.let { "${it.averageSpeed} km/h" } ?: "-"}"
+                    txtUserBestSpd.text = "Your Best Speed: ${best?.let { "${it.maxSpeed} km/h" } ?: "-"}"
+                }
             } catch (e: Exception) {
                 Log.d("API-ERROR", e.stackTraceToString())
             }
@@ -425,7 +503,7 @@ class TrackNavigation : Fragment() {
             distance += results[0]
         }
         txtTrackLength.text = "Length: %.2f km".format(distance / 1000)
-        btnRecord.isEnabled = true
+        updateStartButton()
     }
 
     // Work around a rendering bug where mapOrientation keeps being updated correctly
@@ -553,8 +631,10 @@ class TrackNavigation : Fragment() {
             val destinationFile = File(requireContext().filesDir, "navigation_track.json")
             sourceFile.copyTo(destinationFile, overwrite = true)
 
+            travelVehicle?.let { Vehicle.saveLastUsed(requireContext(), it) }
             val intent = Intent(requireContext(), TrackNavigationService::class.java)
             intent.putExtra("trackId", args.trackId)
+            intent.putExtra("vehicle", travelVehicle?.id)
             requireContext().startForegroundService(intent)
 
             txtDistance.visibility = View.VISIBLE
@@ -615,23 +695,28 @@ class TrackNavigation : Fragment() {
             Toast.makeText(requireContext(), "No travel data to save.", Toast.LENGTH_SHORT).show()
             return
         }
+        val questVehicle = travelData.vehicle ?: trackVehicle?.id
 
         apiCallCoroutine.launch {
             try {
                 val travelResponse = api.createTravel(travelData)
                 if (travelResponse.isSuccessful) {
-                    questApi.increaseQuest(
-                        IncreaseQuestRequest(
-                            QuestType.TRAVEL_DISTANCE.toString(),
-                            travelData.distance.toInt()
+                    if (questVehicle != null) {
+                        questApi.increaseQuest(
+                            IncreaseQuestRequest(
+                                QuestType.TRAVEL_DISTANCE.toString(),
+                                travelData.distance.toInt(),
+                                questVehicle
+                            )
                         )
-                    )
-                    questApi.increaseQuest(
-                        IncreaseQuestRequest(
-                            QuestType.NAVIGATE_TRACK.toString(),
-                            1
+                        questApi.increaseQuest(
+                            IncreaseQuestRequest(
+                                QuestType.NAVIGATE_TRACK.toString(),
+                                1,
+                                questVehicle
+                            )
                         )
-                    )
+                    }
                     travelResponse.body()?.id?.let { travelId -> uploadTravelPoints(travelId) }
                 }
                 withContext(Dispatchers.Main) {

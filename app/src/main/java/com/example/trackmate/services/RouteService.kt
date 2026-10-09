@@ -76,6 +76,13 @@ data class GeocodeResult(
     val lng: Double
 )
 
+/** One of GET /vehicle's entries, as far as the planner needs it. */
+@JsonClass(generateAdapter = true)
+data class VehicleInfo(
+    val id: String,
+    val plannable: Boolean
+)
+
 interface RouteService {
     // A Call, not a suspend function: cancelling it also stops reading the stream, so the server stops downloading
     @Streaming
@@ -94,4 +101,9 @@ interface RouteService {
         @Query("full") full: String? = null,
         @Query("lang") lang: String = "en"
     ): Response<List<GeocodeResult>>
+
+    @GET("vehicle")
+    suspend fun vehicles(
+        @Query("lang") lang: String = "en"
+    ): Response<List<VehicleInfo>>
 }

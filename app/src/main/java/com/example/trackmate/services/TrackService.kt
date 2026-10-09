@@ -10,7 +10,8 @@ import java.util.Date
 
 @JsonClass(generateAdapter = true)
 data class NewTrackRequest(
-    val name: String
+    val name: String,
+    val vehicle: String
 )
 
 @JsonClass(generateAdapter = true)
@@ -21,7 +22,8 @@ data class TrackId(
 @JsonClass(generateAdapter = true)
 data class EditTrackRequest(
     val id: Int,
-    val name: String
+    val name: String,
+    val vehicle: String
 )
 
 @JsonClass(generateAdapter = true)
@@ -31,6 +33,8 @@ data class NewTravelRequest(
     val averageSpeed: Float,
     val maxSpeed: Float,
     val distance: Float,
+    // Without it, the server uses the track's vehicle
+    val vehicle: String? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -42,6 +46,7 @@ data class TravelId(
 data class TrackItem(
     val id: Int,
     val name: String,
+    val vehicle: String,
     val bestTime: Float?,
     val maxSpeed: Float?,
     val bestAverageSpeed: Float?,
@@ -59,6 +64,7 @@ data class TravelItem(
     val maxSpeed: Float,
     val averageSpeed: Float,
     val distance: Float,
+    val vehicle: String,
     // Only sent by track/travel/details
     val username: String? = null
 )
@@ -76,13 +82,15 @@ data class TravelStatistics(
     val averageSpeed: Float,
     val maxSpeed: Float,
     val username: String,
-    val distance: Float
+    val distance: Float,
+    val vehicle: String
 )
 
 @JsonClass(generateAdapter = true)
 data class TrackDetails(
     val id: Int,
     val name: String,
+    val vehicle: String,
     val ownerId: Int? = null,
     val travelCount: Int,
     val userBest: TravelStatistics?,
@@ -125,12 +133,14 @@ interface TrackService {
 
     @GET("track")
     suspend fun getTracks(
+        @Query("vehicle") vehicle: String? = null,
         @Query("lang") lang: String = "en"
     ): Response<List<TrackItem>>
 
     @GET("track/details")
     suspend fun getTrack(
         @Query("id") id: Int,
+        @Query("vehicle") vehicle: String? = null,
         @Query("lang") lang: String = "en"
     ): Response<TrackDetails>
 
@@ -163,12 +173,14 @@ interface TrackService {
     @GET("track/travel/details")
     suspend fun getTravelsByTrack(
         @Query("id") id: Int,
+        @Query("vehicle") vehicle: String? = null,
         @Query("lang") lang: String = "en"
     ): Response<List<TravelItem>>
 
     @GET("track/leaderboard")
     suspend fun getLeaderboard(
         @Query("id") id: Int,
+        @Query("vehicle") vehicle: String? = null,
         @Query("lang") lang: String = "en"
     ): Response<List<LeaderboardItem>>
 }

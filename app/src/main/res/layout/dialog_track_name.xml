@@ -1,15 +1,74 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.textfield.TextInputLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:hint="Track name"
+    android:orientation="vertical"
     android:padding="24dp">
 
-    <EditText
-        android:id="@+id/editTrackName"
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/trackNameLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:inputType="textCapWords"
-        android:singleLine="true" />
+        android:hint="Track name">
 
-</com.google.android.material.textfield.TextInputLayout>
+        <EditText
+            android:id="@+id/editTrackName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textCapWords"
+            android:singleLine="true" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Hidden when the vehicle is already decided (the planner's) -->
+    <LinearLayout
+        android:id="@+id/vehicleSection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/txtVehicle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Vehicle" />
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/vehicleToggle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:selectionRequired="true"
+            app:singleSelection="true">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnVehicleCar"
+                style="@style/VehicleToggleButton"
+                android:contentDescription="@string/vehicle_car"
+                app:icon="@drawable/ic_vehicle_car_24" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnVehicleMotorcycle"
+                style="@style/VehicleToggleButton"
+                android:contentDescription="@string/vehicle_motorcycle"
+                app:icon="@drawable/ic_vehicle_motorcycle_24" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnVehicleBicycle"
+                style="@style/VehicleToggleButton"
+                android:contentDescription="@string/vehicle_bicycle"
+                app:icon="@drawable/ic_vehicle_bicycle_24" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnVehicleFoot"
+                style="@style/VehicleToggleButton"
+                android:contentDescription="@string/vehicle_foot"
+                app:icon="@drawable/ic_vehicle_foot_24" />
+
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+    </LinearLayout>
+
+</LinearLayout>

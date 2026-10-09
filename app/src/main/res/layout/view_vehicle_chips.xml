@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Stats filter on car/motorcycle tracks, the only ones travelled by more than one vehicle -->
+<com.google.android.material.chip.ChipGroup xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/vehicleChips"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:visibility="gone"
+    app:selectionRequired="true"
+    app:singleSelection="true">
+
+    <com.google.android.material.chip.Chip
+        android:id="@+id/chipCar"
+        style="@style/Widget.MaterialComponents.Chip.Choice"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/vehicle_car"
+        app:chipIcon="@drawable/ic_vehicle_car_24"
+        app:chipIconVisible="true" />
+
+    <com.google.android.material.chip.Chip
+        android:id="@+id/chipMotorcycle"
+        style="@style/Widget.MaterialComponents.Chip.Choice"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/vehicle_motorcycle"
+        app:chipIcon="@drawable/ic_vehicle_motorcycle_24"
+        app:chipIconVisible="true" />
+
+</com.google.android.material.chip.ChipGroup>

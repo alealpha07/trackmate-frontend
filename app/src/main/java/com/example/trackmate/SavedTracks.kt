@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
@@ -17,7 +18,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import android.app.AlertDialog
-import android.widget.EditText
 import androidx.navigation.fragment.findNavController
 import com.example.trackmate.services.EditTrackRequest
 import com.example.trackmate.services.TrackService
@@ -31,6 +31,7 @@ class TrackAdapter(
 
     inner class TrackViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val txtName: TextView = view.findViewById(R.id.txtTrackName)
+        val imgVehicle: ImageView = view.findViewById(R.id.imgVehicle)
         val txtBestTime: TextView = view.findViewById(R.id.txtBestTime)
         val txtMaxSpeed: TextView = view.findViewById(R.id.txtMaxSpeed)
         val txtBestAvgSpeed: TextView = view.findViewById(R.id.txtBestAvgSpeed)
@@ -48,6 +49,7 @@ class TrackAdapter(
     override fun onBindViewHolder(holder: TrackViewHolder, position: Int) {
         val track = tracks[position]
         holder.txtName.text = track.name
+        holder.imgVehicle.bindVehicle(Vehicle.fromId(track.vehicle))
         holder.txtBestTime.text =
             "Best Time: ${track.bestTime?.let { formatTime(it) } ?: "N/A"}"
         holder.txtMaxSpeed.text =
@@ -115,44 +117,37 @@ class SavedTracks : Fragment() {
     }
 
     private fun editTrack(track: TrackItem) {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_track_name, null)
-        val editText = dialogView.findViewById<EditText>(R.id.editTrackName)
-        editText.setText(track.name)
-
-        AlertDialog.Builder(requireContext())
-            .setTitle("Edit Track")
-            .setMessage("Editing track ${track.name}")
-            .setView(dialogView)
-            .setPositiveButton("Save") { _, _ ->
-                val name = editText.text.toString().trim()
-                if (name.isNotEmpty()) {
-                    apiCallCoroutine.launch {
-                        try {
-                            val response = api.editTrack(EditTrackRequest(track.id, name))
-                            withContext(Dispatchers.Main) {
-                                if (response.isSuccessful) {
-                                    Toast.makeText(
-                                        requireContext(),
-                                        response.body()?.string() ?: "Success",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                    loadTracks()
-                                } else {
-                                    Toast.makeText(
-                                        requireContext(),
-                                        response.errorBody()?.string() ?: "Error",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            }
-                        } catch (e: Exception) {
-                            Log.d("API-ERROR", e.stackTraceToString())
-                        }
+        val failedText = getString(R.string.track_save_failed)
+        val trackVehicle = Vehicle.fromId(track.vehicle) ?: Vehicle.CAR
+        val profile = Vehicle.profile(requireContext())
+        showTrackNameDialog(
+            title = "Edit Track",
+            message = "Editing track ${track.name}",
+            name = track.name,
+            vehicle = trackVehicle,
+            // The track's own vehicle stays selectable even when it left the profile
+            vehicles = Vehicle.entries.filter { it in profile || it == trackVehicle },
+            saveLabel = "Save",
+            cancelLabel = "Cancel"
+        ) { name, vehicle, done ->
+            apiCallCoroutine.launch {
+                // A class change is refused when other users travelled the track: the dialog shows why
+                val error = try {
+                    val response = api.editTrack(EditTrackRequest(track.id, name, vehicle!!.id))
+                    if (response.isSuccessful) null else response.errorBody()?.string() ?: failedText
+                } catch (e: Exception) {
+                    Log.d("API-ERROR", e.stackTraceToString())
+                    failedText
+                }
+                withContext(Dispatchers.Main) {
+                    done(error)
+                    if (error == null && isAdded) {
+                        Toast.makeText(requireContext(), "Track updated successfully!", Toast.LENGTH_SHORT).show()
+                        loadTracks()
                     }
                 }
             }
-            .setNegativeButton("Cancel", null)
-            .showAboveKeyboard()
+        }
     }
 
     private fun deleteTrack(track: TrackItem) {

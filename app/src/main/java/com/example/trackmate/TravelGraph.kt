@@ -25,6 +25,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.trackmate.databinding.FragmentTravelGraphBinding
 import com.example.trackmate.services.*
+import com.google.android.material.chip.ChipGroup
 import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.charts.HorizontalBarChart
 import com.github.mikephil.charting.charts.LineChart
@@ -88,6 +89,11 @@ class TravelGraph : Fragment() {
     private val apiCallCoroutine = CoroutineScope(Dispatchers.IO)
     private val args: TravelGraphArgs by navArgs()
 
+    // The track's travels by every vehicle, and those of the selected vehicle
+    private var trackTravels: List<TravelItem>? = null
+    private var currentUserId: Int? = null
+    private var ownerId: Int? = null
+    private var selectedVehicle: Vehicle? = null
     private var allTravels: List<TravelItem> = emptyList()
     private var filterUserIds: List<Int> = emptyList()
     private var selectedUserId: Int? = null
@@ -119,7 +125,6 @@ class TravelGraph : Fragment() {
         initSpeedMapView()
 
         loadTrackData()
-        loadLeaderboard()
     }
 
     override fun onResume() {
@@ -134,6 +139,7 @@ class TravelGraph : Fragment() {
 
     private fun showTrackDetails(trackDetails: TrackDetails) {
         binding.txtTrackName.text = trackDetails.name
+        binding.txtTrackVehicle.showTrackVehicle(Vehicle.fromId(trackDetails.vehicle))
 
         val trackLength = trackDetails.overallBest?.distance
         binding.txtTrackLength.text = if (trackLength != null) {
@@ -151,24 +157,53 @@ class TravelGraph : Fragment() {
     private fun loadTrackData() {
         apiCallCoroutine.launch {
             try {
-                // Track details carry the owner id, needed to pick the default user below
+                // Track details carry the owner id, needed to pick the default user, and the track's vehicle
                 val trackResponse = api.getTrack(args.trackId)
                 val trackDetails = trackResponse.body().takeIf { trackResponse.isSuccessful }
-                if (trackDetails != null) {
-                    withContext(Dispatchers.Main) { showTrackDetails(trackDetails) }
-                }
 
                 val response = api.getTravelsByTrack(args.trackId)
-                if (response.isSuccessful && response.body() != null) {
-                    val travels = response.body()!!
-                    val userResponse = authApi.getUser()
-                    if (userResponse.isSuccessful && userResponse.body() != null) {
-                        val userId = userResponse.body()!!.id
-                        withContext(Dispatchers.Main) {
-                            setupSpeedComparisonBarChart(binding.barChart, travels, userId)
-                            setupUserFilter(travels, userId, trackDetails?.ownerId)
-                        }
+                val travels = response.body().takeIf { response.isSuccessful }
+                val userResponse = if (travels != null) authApi.getUser() else null
+                val userId = userResponse?.body()?.takeIf { userResponse.isSuccessful }?.id
+                withContext(Dispatchers.Main) {
+                    if (_binding == null) return@withContext
+                    ownerId = trackDetails?.ownerId
+                    if (travels != null && userId != null) {
+                        trackTravels = travels
+                        currentUserId = userId
                     }
+                    val vehicle = Vehicle.fromId(trackDetails?.vehicle)
+                    if (vehicle != null) {
+                        binding.root.findViewById<ChipGroup>(R.id.vehicleChips).bindVehicleChips(vehicle, ::showVehicle)
+                    } else {
+                        showVehicle(null)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("API-ERROR", e.stackTraceToString())
+            }
+        }
+    }
+
+    /** Stats are split by vehicle; null (track details unavailable) shows every travel. */
+    private fun showVehicle(vehicle: Vehicle?) {
+        selectedVehicle = vehicle
+        loadDetails(vehicle)
+        loadLeaderboard(vehicle)
+        val travels = trackTravels ?: return
+        val userId = currentUserId ?: return
+        val shown = if (vehicle == null) travels else travels.filter { it.vehicle == vehicle.id }
+        setupSpeedComparisonBarChart(binding.barChart, shown, userId)
+        setupUserFilter(shown, userId, ownerId)
+    }
+
+    private fun loadDetails(vehicle: Vehicle?) {
+        apiCallCoroutine.launch {
+            try {
+                val response = api.getTrack(args.trackId, vehicle?.id)
+                val details = response.body().takeIf { response.isSuccessful } ?: return@launch
+                withContext(Dispatchers.Main) {
+                    if (_binding != null && vehicle == selectedVehicle) showTrackDetails(details)
                 }
             } catch (e: Exception) {
                 Log.e("API-ERROR", e.stackTraceToString())
@@ -185,10 +220,10 @@ class TravelGraph : Fragment() {
         )
         filterUserIds = userIds
 
+        binding.titleUserFilter.isVisible = userIds.isNotEmpty()
+        binding.spinnerUsers.isVisible = userIds.isNotEmpty()
         if (userIds.isEmpty()) {
-            binding.titleUserFilter.isVisible = false
-            binding.spinnerUsers.isVisible = false
-            showDataForUser(null)
+            showDataForUser(null, force = true)
             return
         }
 
@@ -209,11 +244,12 @@ class TravelGraph : Fragment() {
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
-        showDataForUser(userIds[0])
+        showDataForUser(userIds[0], force = true)
     }
 
-    private fun showDataForUser(userId: Int?) {
-        if (userId != null && userId == selectedUserId) return
+    /** [force]: the travels changed (another vehicle), so redraw even for the same user. */
+    private fun showDataForUser(userId: Int?, force: Boolean = false) {
+        if (!force && userId != null && userId == selectedUserId) return
         selectedUserId = userId
 
         val userTravels = allTravels.filter { it.userId == userId }
@@ -224,7 +260,10 @@ class TravelGraph : Fragment() {
     }
 
     private fun setupSpeedComparisonBarChart(chart: BarChart, travels: List<TravelItem>, userId: Int) {
-        if (travels.isEmpty()) return
+        if (travels.isEmpty()) {
+            chart.clear()
+            return
+        }
 
         val userTravels = travels.filter { it.userId == userId }
         val otherTravels = travels.filter { it.userId != userId }
@@ -511,14 +550,14 @@ class TravelGraph : Fragment() {
         return Color.rgb(r, g, b)
     }
 
-    private fun loadLeaderboard() {
+    private fun loadLeaderboard(vehicle: Vehicle?) {
         apiCallCoroutine.launch {
             try {
-                val response = api.getLeaderboard(args.trackId)
+                val response = api.getLeaderboard(args.trackId, vehicle?.id)
                 if (response.isSuccessful && response.body() != null) {
                     val leaderboard = response.body()!!
                     withContext(Dispatchers.Main) {
-                        leaderboardAdapter.submitList(leaderboard)
+                        if (_binding != null && vehicle == selectedVehicle) leaderboardAdapter.submitList(leaderboard)
                     }
                 }
             } catch (e: Exception) {

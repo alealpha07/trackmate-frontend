@@ -5,6 +5,15 @@
     android:layout_height="wrap_content"
     android:padding="8dp">
 
+    <ImageView
+        android:id="@+id/imgVehicle"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        app:tint="?android:attr/textColorSecondary"
+        app:layout_constraintTop_toTopOf="@id/txtTrackName"
+        app:layout_constraintBottom_toBottomOf="@id/txtTrackName"
+        app:layout_constraintStart_toStartOf="parent" />
+
     <TextView
         android:id="@+id/txtTrackName"
         android:layout_width="0dp"
@@ -13,7 +22,8 @@
         android:textSize="18sp"
         android:textStyle="bold"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintStart_toEndOf="@id/imgVehicle"
+        android:layout_marginStart="8dp"
         app:layout_constraintEnd_toStartOf="@id/btnEdit" />
 
     <ImageButton

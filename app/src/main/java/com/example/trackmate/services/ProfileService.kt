@@ -11,6 +11,12 @@ data class EditProfileRequest(
     val bio: String
 )
 
+/** Vehicle ids, as in GET /vehicle. */
+@JsonClass(generateAdapter = true)
+data class EditVehiclesRequest(
+    val vehicles: List<String>
+)
+
 @JsonClass(generateAdapter = true)
 data class ProfileResponse(
     val username: String,
@@ -39,6 +45,17 @@ interface ProfileService {
     @PUT("user")
     suspend fun editProfile(
         @Body data: EditProfileRequest,
+        @Query("lang") lang: String = "en"
+    ): Response<ResponseBody>
+
+    @GET("user/vehicles")
+    suspend fun getVehicles(
+        @Query("lang") lang: String = "en"
+    ): Response<List<String>>
+
+    @PUT("user/vehicles")
+    suspend fun editVehicles(
+        @Body data: EditVehiclesRequest,
         @Query("lang") lang: String = "en"
     ): Response<ResponseBody>
 

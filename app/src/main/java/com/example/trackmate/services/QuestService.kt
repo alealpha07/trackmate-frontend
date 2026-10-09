@@ -14,6 +14,7 @@ data class QuestResponse(
     val maxProgress: Int,
     val progress: Int,
     val type: String,
+    val vehicle: String,
 )
 
 enum class QuestType {
@@ -23,7 +24,9 @@ enum class QuestType {
 @JsonClass(generateAdapter = true)
 data class IncreaseQuestRequest(
     val type: String,
-    val progress: Int
+    val progress: Int,
+    // Only the quests of this vehicle advance
+    val vehicle: String
 )
 
 @JsonClass(generateAdapter = true)

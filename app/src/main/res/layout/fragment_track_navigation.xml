@@ -140,11 +140,32 @@
             android:layout_width="wrap_content"/>
 
         <TextView
+            android:id="@+id/txtTrackVehicle"
+            android:textSize="16sp"
+            android:drawablePadding="8dp"
+            android:drawableTint="?android:attr/textColorSecondary"
+            android:gravity="center_vertical"
+            android:visibility="gone"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"/>
+
+        <!-- When the profile has no vehicle of the track's class: Start is disabled -->
+        <TextView
+            android:id="@+id/txtVehicleMissing"
+            android:textSize="16sp"
+            android:textColor="@android:color/holo_red_dark"
+            android:visibility="gone"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"/>
+
+        <TextView
             android:id="@+id/txtTrackLength"
             android:text="Length: 0.00 km"
             android:textSize="16sp"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"/>
+
+        <include layout="@layout/view_vehicle_chips" />
 
         <TextView
             android:id="@+id/txtUserBest"
@@ -175,6 +196,52 @@
             android:layout_marginTop="16dp"
             android:backgroundTint="@color/cardview_light_background"
             style="?attr/materialButtonOutlinedStyle"/>
+
+        <!-- The travel's vehicle, on car/motorcycle tracks when both are in the profile -->
+        <LinearLayout
+            android:id="@+id/travelVehicleSection"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_marginTop="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:text="@string/navigate_by"
+                android:textSize="16sp"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"/>
+
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/travelVehicleToggle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:selectionRequired="true"
+                app:singleSelection="true">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnTravelCar"
+                    style="@style/VehicleToggleButton"
+                    android:layout_width="wrap_content"
+                    android:layout_weight="0"
+                    android:textAllCaps="false"
+                    android:text="@string/vehicle_car"
+                    app:icon="@drawable/ic_vehicle_car_24"
+                    app:iconPadding="8dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnTravelMotorcycle"
+                    style="@style/VehicleToggleButton"
+                    android:layout_width="wrap_content"
+                    android:layout_weight="0"
+                    android:textAllCaps="false"
+                    android:text="@string/vehicle_motorcycle"
+                    app:icon="@drawable/ic_vehicle_motorcycle_24"
+                    app:iconPadding="8dp" />
+
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+        </LinearLayout>
 
     </LinearLayout>
 

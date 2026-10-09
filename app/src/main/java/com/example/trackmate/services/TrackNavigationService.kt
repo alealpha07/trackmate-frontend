@@ -57,6 +57,8 @@ class TrackNavigationService : Service() {
         private var lastNavigationData: NewTravelRequest? = null
         private var lastNavigationPoints: List<TrackPoint>? = null
         var trackId: Int = -1
+        // The travel's vehicle, chosen before Start; null lets the server use the track's
+        var vehicleId: String? = null
         fun getLastNavigationData(): NewTravelRequest? = lastNavigationData
         fun getLastNavigationPoints(): List<TrackPoint>? = lastNavigationPoints
     }
@@ -82,6 +84,7 @@ class TrackNavigationService : Service() {
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         trackId = intent?.getIntExtra("trackId", -1) ?: -1
+        vehicleId = intent?.getStringExtra("vehicle")
 
         startForegroundService()
 
@@ -364,7 +367,8 @@ class TrackNavigationService : Service() {
             time = durationSec,
             averageSpeed = if (durationSec > 0) distance / durationSec * 3.6f else 0f,
             maxSpeed = maxSpeed * 3.6f,
-            distance = distance / 1000f
+            distance = distance / 1000f,
+            vehicle = vehicleId
         )
     }
 
