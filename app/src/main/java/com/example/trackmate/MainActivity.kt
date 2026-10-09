@@ -34,6 +34,7 @@ import okhttp3.Cache
 import okhttp3.Interceptor
 import androidx.appcompat.app.AppCompatDelegate
 import java.io.File
+import java.util.concurrent.TimeUnit
 
 class SessionCookieJar(context: Context) : CookieJar {
     private val masterKey = MasterKey.Builder(context)
@@ -75,6 +76,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var friendService: FriendService
     lateinit var trackService: TrackService
     lateinit var postService: PostService
+    lateinit var routeService: RouteService
     lateinit var cache: Cache
     lateinit var cookieJar: SessionCookieJar
 
@@ -153,6 +155,12 @@ class MainActivity : AppCompatActivity() {
         friendService = retrofit.create(FriendService::class.java)
         trackService = retrofit.create(TrackService::class.java)
         postService = retrofit.create(PostService::class.java)
+        // A plan can stay silent longer than the default 10 s read timeout (rate limits, slow map data downloads).
+        // Changing the points or options cancels the call instead
+        routeService = retrofit.newBuilder()
+            .client(client.newBuilder().readTimeout(0, TimeUnit.MILLISECONDS).build())
+            .build()
+            .create(RouteService::class.java)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)

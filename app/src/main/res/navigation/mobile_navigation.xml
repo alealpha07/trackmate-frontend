@@ -75,6 +75,15 @@
             app:destination="@id/trackNavigation" />
     </fragment>
     <fragment
+        android:id="@+id/trackPlanner"
+        android:name="com.example.trackmate.TrackPlanner"
+        android:label="@string/plan_title"
+        tools:layout="@layout/fragment_track_planner" >
+        <action
+            android:id="@+id/action_trackPlanner_to_trackNavigation"
+            app:destination="@id/trackNavigation" />
+    </fragment>
+    <fragment
         android:id="@+id/loginRegister"
         android:name="com.example.trackmate.LoginRegister"
         android:label="Track Mate - Sign In"

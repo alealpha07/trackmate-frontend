@@ -97,7 +97,9 @@ fun setupMapControls(
     btnMyLocation: View,
     btnZoomIn: View,
     btnZoomOut: View,
-    onStyleChanged: (MapStyle) -> Unit = {}
+    onStyleChanged: (MapStyle) -> Unit = {},
+    // The planner centers above its bottom sheet
+    centerOnLocation: (GeoPoint) -> Unit = { mapView.controller.animateTo(it, 16.0, 500L) }
 ) {
     val context = fragment.requireContext()
 
@@ -128,7 +130,7 @@ fun setupMapControls(
     btnMyLocation.setOnClickListener {
         val location = myLocationOverlay.myLocation
         if (location != null) {
-            mapView.controller.animateTo(location, 16.0, 500L)
+            centerOnLocation(location)
         } else {
             Toast.makeText(context, "Current location not available yet", Toast.LENGTH_SHORT).show()
         }

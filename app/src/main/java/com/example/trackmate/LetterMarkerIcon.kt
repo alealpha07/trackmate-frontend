@@ -18,6 +18,17 @@ fun createLetterMarkerIcon(
         context,
         com.google.android.material.R.color.design_default_color_primary
     )
+): Drawable = createLetterMarkerIcon(context, letter.toString(), sizeDp, fillColor)
+
+/** Also for the planner's stop numbers, which can have two digits. */
+fun createLetterMarkerIcon(
+    context: Context,
+    label: String,
+    sizeDp: Int = 32,
+    fillColor: Int = ContextCompat.getColor(
+        context,
+        com.google.android.material.R.color.design_default_color_primary
+    )
 ): Drawable {
     val density = context.resources.displayMetrics.density
     val sizePx = (sizeDp * density).toInt()
@@ -48,7 +59,7 @@ fun createLetterMarkerIcon(
         typeface = Typeface.DEFAULT_BOLD
     }
     val textY = center - (textPaint.descent() + textPaint.ascent()) / 2f
-    canvas.drawText(letter.toString(), center, textY, textPaint)
+    canvas.drawText(label, center, textY, textPaint)
 
     return BitmapDrawable(context.resources, bitmap)
 }

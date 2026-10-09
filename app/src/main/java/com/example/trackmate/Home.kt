@@ -292,7 +292,8 @@ class Home : Fragment() {
                     val posts = response.body()!!
                     withContext(Dispatchers.Main) {
                         if (reset) {
-                            postsAdapter.submitList(posts.toMutableList())
+                            // A new tab starts from its first post, not where the other tab was scrolled to
+                            postsAdapter.submitList(posts.toMutableList()) { recyclerView.scrollToPosition(0) }
                         } else {
                             val current = postsAdapter.currentList.toMutableList()
                             current.addAll(posts)
@@ -320,7 +321,8 @@ class Home : Fragment() {
                     val posts = response.body()!!
                     withContext(Dispatchers.Main) {
                         if (reset) {
-                            postsAdapter.submitList(posts.toMutableList())
+                            // A new tab starts from its first post, not where the other tab was scrolled to
+                            postsAdapter.submitList(posts.toMutableList()) { recyclerView.scrollToPosition(0) }
                         } else {
                             val current = postsAdapter.currentList.toMutableList()
                             current.addAll(posts)

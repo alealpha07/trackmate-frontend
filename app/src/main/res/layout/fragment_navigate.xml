@@ -128,13 +128,29 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginBottom="64dp" />
 
+    <!-- Plan route and Saved Tracks side by side, both hidden while recording -->
+    <Button
+        android:id="@+id/btnPlanRoute"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:text="@string/plan_open"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btnOpenLibrary"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        android:layout_marginBottom="16dp"
+        app:icon="@drawable/ic_route_24"
+        android:backgroundTint="@color/cardview_light_background"
+        style="?attr/materialButtonOutlinedStyle"/>
+
     <Button
         android:id="@+id/btnOpenLibrary"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Saved Tracks"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintStart_toEndOf="@id/btnPlanRoute"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginBottom="16dp"
         app:icon="@drawable/baseline_menu_24"

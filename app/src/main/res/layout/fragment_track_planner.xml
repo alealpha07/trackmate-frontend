@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The web planner's phone layout: full-screen map, controls top right, the panel as a bottom sheet -->
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="56dp"
+    tools:context=".TrackPlanner">
+
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:id="@+id/plannerRoot"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <org.osmdroid.views.MapView
+            android:id="@+id/mapView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <LinearLayout
+            android:id="@+id/mapControls"
+            android:orientation="vertical"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="16dp">
+
+            <!-- Only shown while the map is turned -->
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/btnCompass"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:contentDescription="@string/plan_north"
+                android:tooltipText="@string/plan_north"
+                android:visibility="gone"
+                app:fabSize="mini"
+                app:srcCompat="@drawable/ic_compass_needle_24"
+                app:tint="@null"
+                app:backgroundTint="@android:color/white" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/btnLayers"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:contentDescription="Change map style"
+                app:fabSize="mini"
+                app:srcCompat="@drawable/ic_layers_24"
+                app:tint="@android:color/black"
+                app:backgroundTint="@android:color/white" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/btnMyLocation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:contentDescription="Center on my location"
+                app:fabSize="mini"
+                app:srcCompat="@drawable/ic_my_location_24"
+                app:tint="@android:color/black"
+                app:backgroundTint="@android:color/white" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/btnZoomIn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="2dp"
+                android:contentDescription="Zoom in"
+                app:fabSize="mini"
+                app:srcCompat="@drawable/ic_add_24"
+                app:tint="@android:color/black"
+                app:backgroundTint="@android:color/white" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/btnZoomOut"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="Zoom out"
+                app:fabSize="mini"
+                app:srcCompat="@drawable/ic_remove_24"
+                app:tint="@android:color/black"
+                app:backgroundTint="@android:color/white" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/sheet"
+            style="@style/Widget.MaterialComponents.BottomSheet"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:behavior_hideable="false"
+            app:behavior_peekHeight="120dp"
+            app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+
+            <View
+                android:layout_width="32dp"
+                android:layout_height="4dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginVertical="10dp"
+                android:background="@drawable/bg_sheet_handle" />
+
+            <androidx.core.widget.NestedScrollView
+                android:id="@+id/sheetScroll"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbarStyle="outsideOverlay"
+                android:scrollbars="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="16dp"
+                    android:paddingBottom="16dp">
+
+                    <!-- Start, stops and destination, in route order (item_plan_point) -->
+                    <LinearLayout
+                        android:id="@+id/pointList"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnAddStop"
+                            style="@style/Widget.MaterialComponents.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="-8dp"
+                            android:text="@string/plan_add_stop" />
+
+                        <Space
+                            android:layout_width="0dp"
+                            android:layout_height="0dp"
+                            android:layout_weight="1" />
+
+                        <ImageButton
+                            android:id="@+id/btnReverse"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:background="@drawable/circle_outline_primary"
+                            android:foreground="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="@string/plan_reverse"
+                            android:tooltipText="@string/plan_reverse"
+                            android:padding="6dp"
+                            android:scaleType="centerInside"
+                            android:src="@drawable/ic_swap_vert_24"
+                            app:tint="@color/primary_500" />
+
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/txtPointsHint"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/plan_leg_limit_hint"
+                        android:textColor="?android:attr/textColorSecondary"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        style="@style/PlannerLegend"
+                        android:layout_marginTop="16dp"
+                        android:text="@string/plan_vehicle" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/vehicleField"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.Dense.ExposedDropdownMenu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:hintEnabled="false">
+
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/vehicleInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:paddingTop="12dp"
+                            android:paddingBottom="12dp" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <TextView
+                        style="@style/PlannerLegend"
+                        android:layout_marginTop="16dp"
+                        android:text="@string/plan_policy" />
+
+                    <com.google.android.material.button.MaterialButtonToggleGroup
+                        android:id="@+id/policyGroup"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:selectionRequired="true"
+                        app:singleSelection="true">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnSafest"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/plan_safest"
+                            android:tooltipText="@string/plan_safest_hint" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnShortest"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/plan_shortest"
+                            android:tooltipText="@string/plan_shortest_hint" />
+
+                    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                    <!-- Filter groups show only for their vehicle and policy -->
+                    <LinearLayout
+                        android:id="@+id/safetyGroup"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/PlannerLegend"
+                            android:text="@string/plan_safety_filters" />
+
+                        <com.google.android.material.checkbox.MaterialCheckBox
+                            android:id="@+id/cbCyclewaysOnly"
+                            style="@style/PlannerToggle"
+                            android:text="@string/plan_cycleways_only"
+                            android:tooltipText="@string/plan_cycleways_only_hint" />
+
+                        <com.google.android.material.checkbox.MaterialCheckBox
+                            android:id="@+id/cbAvoidLts4"
+                            style="@style/PlannerToggle"
+                            android:text="@string/plan_avoid_lts4"
+                            android:tooltipText="@string/plan_avoid_lts4_hint" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/preferencesGroup"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/PlannerLegend"
+                            android:text="@string/plan_preferences" />
+
+                        <com.google.android.material.checkbox.MaterialCheckBox
+                            android:id="@+id/cbAvoidUnpaved"
+                            style="@style/PlannerToggle"
+                            android:text="@string/plan_avoid_unpaved"
+                            android:tooltipText="@string/plan_avoid_unpaved_hint" />
+
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPlan"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:enabled="false"
+                        android:text="@string/plan_plan"
+                        app:iconGravity="textStart" />
+
+                    <TextView
+                        android:id="@+id/txtStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textColor="?android:attr/textColorSecondary"
+                        android:textSize="15sp"
+                        android:visibility="gone" />
+
+                    <LinearLayout
+                        android:id="@+id/result"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="#FFE0E0E0" />
+
+                        <!-- Rows of two item_plan_stat, only the stats the server sent -->
+                        <LinearLayout
+                            android:id="@+id/statsGrid"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:orientation="vertical" />
+
+                        <LinearLayout
+                            android:id="@+id/legList"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:orientation="vertical" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnSave"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="@string/plan_save" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnNavigate"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/plan_navigate"
+                            app:icon="@drawable/baseline_navigation_24_white"
+                            app:iconGravity="textStart" />
+
+                        <!-- Routes use Copernicus elevation: its licence asks for this notice on modified data.
+                             Here rather than in the map's copyright overlay, which draws a single line under the sheet -->
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:text="@string/plan_dem_attribution"
+                            android:textColor="?android:attr/textColorSecondary"
+                            android:textSize="10sp" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </androidx.core.widget.NestedScrollView>
+
+        </LinearLayout>
+
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+</FrameLayout>

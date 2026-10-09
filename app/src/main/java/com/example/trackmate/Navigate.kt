@@ -58,6 +58,7 @@ class Navigate : Fragment() {
     private lateinit var mapView: MapView
     private lateinit var btnRecord: Button
     private lateinit var btnOpenLibrary: Button
+    private lateinit var btnPlanRoute: Button
     private lateinit var myLocationOverlay: AnimatedMyLocationOverlay
     private lateinit var compass: MapCompassController
     private lateinit var txtDistance: TextView
@@ -238,6 +239,7 @@ class Navigate : Fragment() {
         mapView = view.findViewById(R.id.mapView)
         btnRecord = view.findViewById(R.id.btnRecord)
         btnOpenLibrary = view.findViewById(R.id.btnOpenLibrary)
+        btnPlanRoute = view.findViewById(R.id.btnPlanRoute)
         txtCurrentSpeed = view.findViewById(R.id.txtCurrentSpeed)
         txtDistance = view.findViewById(R.id.txtDistance)
         txtDuration = view.findViewById(R.id.txtDuration)
@@ -249,6 +251,9 @@ class Navigate : Fragment() {
         }
         btnOpenLibrary.setOnClickListener {
             findNavController().navigate(R.id.savedTracks)
+        }
+        btnPlanRoute.setOnClickListener {
+            findNavController().navigate(R.id.trackPlanner)
         }
         return view
     }
@@ -312,6 +317,7 @@ class Navigate : Fragment() {
         TrackRecordingService.isRecording = true
         btnRecord.text = "Stop Recording"
         btnOpenLibrary.visibility = View.GONE
+        btnPlanRoute.visibility = View.GONE
         compass.setActive(true)
         myLocationOverlay.followsAnimation = true
         mapView.controller.setZoom(TRACKING_ZOOM_LEVEL)
@@ -324,6 +330,7 @@ class Navigate : Fragment() {
         TrackRecordingService.isRecording = false
         btnRecord.text = "Start Recording"
         btnOpenLibrary.visibility = View.VISIBLE
+        btnPlanRoute.visibility = View.VISIBLE
         compass.setActive(false)
         myLocationOverlay.followsAnimation = false
 
@@ -443,8 +450,10 @@ class Navigate : Fragment() {
                 redrawPolyline()
             }
             btnOpenLibrary.visibility = View.GONE
+            btnPlanRoute.visibility = View.GONE
         } else {
             btnOpenLibrary.visibility = View.VISIBLE
+            btnPlanRoute.visibility = View.VISIBLE
             if (!TrackNavigationService.isNavigating) startIdleSpeedUpdates()
         }
         LocalBroadcastManager.getInstance(requireContext())
