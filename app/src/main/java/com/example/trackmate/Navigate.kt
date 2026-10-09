@@ -12,7 +12,6 @@ import android.os.Looper
 import android.util.Log
 import android.view.*
 import android.widget.Button
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
@@ -47,7 +46,6 @@ import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.io.File
-import kotlin.math.roundToInt
 
 const val DRAG_RESUME_FOLLOW_TIME: Long = 5000
 
@@ -59,9 +57,7 @@ class Navigate : Fragment() {
     private lateinit var btnPlanRoute: Button
     private lateinit var myLocationOverlay: AnimatedMyLocationOverlay
     private lateinit var compass: MapCompassController
-    private lateinit var txtDistance: TextView
-    private lateinit var txtDuration: TextView
-    private lateinit var txtCurrentSpeed: TextView
+    private lateinit var rideStats: RideStatsCard
     private lateinit var questApi: QuestService
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var idleSpeedCallback: LocationCallback? = null
@@ -86,7 +82,7 @@ class Navigate : Fragment() {
         }
 
     // Keeps the speed readout live while just browsing the map, i.e. outside of an
-    // active recording, which otherwise drives txtCurrentSpeed via its own broadcast.
+    // active recording, which otherwise drives the speed via its own broadcast.
     private fun startIdleSpeedUpdates() {
         if (idleSpeedCallback != null) return
         if (ActivityCompat.checkSelfPermission(
@@ -105,7 +101,7 @@ class Navigate : Fragment() {
                 val speedKmh = if (location.hasSpeed() && location.speed <= MAX_PLAUSIBLE_SPEED_MPS) {
                     location.speed * 3.6f
                 } else 0f
-                txtCurrentSpeed.text = "Speed: ${speedKmh.roundToInt()} km/h"
+                rideStats.showSpeed(speedKmh)
             }
         }
         fusedLocationClient.requestLocationUpdates(request, idleSpeedCallback!!, Looper.getMainLooper())
@@ -142,9 +138,7 @@ class Navigate : Fragment() {
             val duration = intent.getLongExtra("duration", 0L)
             val speed = intent.getFloatExtra("speed", 0f)
 
-            txtCurrentSpeed.text = "Speed: ${speed.roundToInt()} km/h"
-            txtDistance.text = "Distance: ${String.format("%.2f", distance)} km"
-            txtDuration.text = "Duration: ${formatTime((duration / 1000).toFloat())}"
+            rideStats.show(distance, duration, speed)
 
             val lat = intent.getDoubleExtra("lat", Double.NaN)
             val lng = intent.getDoubleExtra("lng", Double.NaN)
@@ -235,9 +229,7 @@ class Navigate : Fragment() {
         btnRecord = view.findViewById(R.id.btnRecord)
         btnOpenLibrary = view.findViewById(R.id.btnOpenLibrary)
         btnPlanRoute = view.findViewById(R.id.btnPlanRoute)
-        txtCurrentSpeed = view.findViewById(R.id.txtCurrentSpeed)
-        txtDistance = view.findViewById(R.id.txtDistance)
-        txtDuration = view.findViewById(R.id.txtDuration)
+        rideStats = RideStatsCard(view.findViewById(R.id.rideStats))
         setupMap(view)
         // Kept for the save dialog, which must open even without a connection
         val appContext = requireContext().applicationContext
@@ -263,7 +255,6 @@ class Navigate : Fragment() {
         mapView.setTileSource(tileSourceFor(mapStyle))
         mapView.setMultiTouchControls(true)
         mapView.controller.setZoom(DEFAULT_MAP_ZOOM)
-        applyOverlayTextColor(mapStyle, txtDistance, txtDuration, txtCurrentSpeed)
 
         mapView.overlays.add(buildCopyrightOverlay(requireContext()))
 
@@ -278,10 +269,7 @@ class Navigate : Fragment() {
             btnLayers = view.findViewById(R.id.btnLayers),
             btnMyLocation = view.findViewById(R.id.btnMyLocation),
             btnZoomIn = view.findViewById(R.id.btnZoomIn),
-            btnZoomOut = view.findViewById(R.id.btnZoomOut),
-            onStyleChanged = { style ->
-                applyOverlayTextColor(style, txtDistance, txtDuration, txtCurrentSpeed)
-            }
+            btnZoomOut = view.findViewById(R.id.btnZoomOut)
         )
         compass = MapCompassController(mapView, view.findViewById(R.id.btnCompass))
 

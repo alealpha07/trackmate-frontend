@@ -77,7 +77,12 @@
     <string name="profile_vehicles_hint">Daily quests are for these vehicles, and you save and navigate tracks with them.</string>
     <string name="profile_vehicles_missing">Keep at least one vehicle</string>
     <string name="navigate_by">Navigate by</string>
+    <string name="navigate_start">Start</string>
     <string name="navigate_vehicle_missing">Add %1$s to your vehicles to navigate this track</string>
+    <!-- Ride stats card over the map -->
+    <string name="ride_stats_km">km</string>
+    <string name="ride_stats_time">time</string>
+    <string name="ride_stats_speed">km/h</string>
     <!-- Track name dialog -->
     <string name="track_name_missing">Enter a name for the track</string>
     <string name="track_save_failed">Couldn\'t save the track: check your connection and try again.</string>

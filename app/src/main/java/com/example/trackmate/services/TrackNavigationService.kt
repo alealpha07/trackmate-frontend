@@ -15,20 +15,17 @@ import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.example.trackmate.R
 import com.google.android.gms.location.*
-import org.osmdroid.util.GeoPoint
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
-import kotlin.math.min
 
 const val POINT_VISIT_THRESHOLD = 30f
 const val OFF_TRACK_THRESHOLD = 50f
 const val LENGTH_SIMILARITY_RATIO = 0.15f
 const val REQUIRED_MIDDLE_POINTS_RATIO = 0.5f
-const val IS_BETWEEN_POINTS_THRESHOLD = 0.10
 
 const val MAX_ACCURACY_METERS = 25f
 const val MIN_RELIABLE_DT_SECONDS = 1f
@@ -39,13 +36,11 @@ class TrackNavigationService : Service() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var locationCallback: LocationCallback? = null
     private val navigationPath = mutableListOf<Location>()
-    private val referenceTrackPoints = mutableListOf<GeoPoint>()
-    private val visitedIndices = mutableSetOf<Int>()
-
-    private var currentTargetIndex = 1
-    private var referenceTrackLengthMeters = 0f
-    private var lastNearestIndex = 0
-    private var lastOffTrack = false
+    // Set once the track file is loaded, before location updates start
+    @Volatile
+    private var progress: TrackProgress? = null
+    private var trackedFixes = 0
+    private var closeFixes = 0
     private var startTime: Long = 0
     private var navigationCompleted = false
     private lateinit var workerThread: HandlerThread
@@ -89,8 +84,8 @@ class TrackNavigationService : Service() {
         startForegroundService()
 
         CoroutineScope(Dispatchers.IO).launch {
-            loadReferenceTrack()
-            if (referenceTrackPoints.isNotEmpty()) {
+            progress = loadReferenceTrack()
+            if (progress != null) {
                 startLocationUpdates()
                 startTime = System.nanoTime()
             } else {
@@ -129,114 +124,26 @@ class TrackNavigationService : Service() {
     }
 
     private fun checkNavigationProgress(currentLocation: Location) {
-        if (referenceTrackPoints.isEmpty()) return
-
-        val nearestIdx = findNearestReferenceIndex(currentLocation)
-        val nearestPoint = referenceTrackPoints[nearestIdx]
-        val distanceToNearest = FloatArray(1).apply {
-            Location.distanceBetween(
-                currentLocation.latitude,
-                currentLocation.longitude,
-                nearestPoint.latitude,
-                nearestPoint.longitude,
-                this
-            )
-        }[0]
-
-        if (distanceToNearest <= POINT_VISIT_THRESHOLD) visitedIndices.add(nearestIdx)
-
-        while (currentTargetIndex < referenceTrackPoints.size) {
-            val target = referenceTrackPoints[currentTargetIndex]
-            val next = referenceTrackPoints.getOrNull(currentTargetIndex + 1)
-            val distanceToTarget = FloatArray(1).apply {
-                Location.distanceBetween(
-                    currentLocation.latitude,
-                    currentLocation.longitude,
-                    target.latitude,
-                    target.longitude,
-                    this
-                )
-            }[0]
-
-            val passed = distanceToTarget <= POINT_VISIT_THRESHOLD ||
-                    (next != null && isBetweenPoints(currentLocation, target, next))
-
-            if (passed) {
-                visitedIndices.add(currentTargetIndex)
-                currentTargetIndex++
-            } else break
-        }
-
-        lastNearestIndex = nearestIdx
-        lastOffTrack = distanceToNearest > OFF_TRACK_THRESHOLD
-
-        checkCompletionCriteria()
+        val progress = progress ?: return
+        progress.update(currentLocation.latitude, currentLocation.longitude)
+        trackedFixes++
+        if (!progress.offTrack) closeFixes++
+        checkCompletionCriteria(progress)
     }
 
-    private fun isBetweenPoints(
-        user: Location,
-        start: GeoPoint,
-        end: GeoPoint,
-        margin: Double = IS_BETWEEN_POINTS_THRESHOLD,
-        maxDistance: Float = POINT_VISIT_THRESHOLD
-    ): Boolean {
-        val dx = end.latitude - start.latitude
-        val dy = end.longitude - start.longitude
-        val t =
-            ((user.latitude - start.latitude) * dx + (user.longitude - start.longitude) * dy) / (dx * dx + dy * dy)
-        if (t < -margin || t > 1.0 + margin) return false
-
-        val distance = distancePointToSegment(
-            user.latitude,
-            user.longitude,
-            user.latitude,
-            user.longitude,
-            start.latitude,
-            start.longitude
-        )
-        return distance <= maxDistance
-    }
-
-    private fun loadReferenceTrack() {
+    private fun loadReferenceTrack(): TrackProgress? {
         val file = File(filesDir, "navigation_track.json")
-        if (!file.exists()) return
+        if (!file.exists()) return null
 
-        try {
+        return try {
             val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
-            val track = moshi.adapter(Track::class.java).fromJson(file.readText()) ?: return
-            referenceTrackPoints.clear()
-            referenceTrackPoints.addAll(track.track.map { GeoPoint(it.latitude, it.longitude) })
-
-            referenceTrackLengthMeters = referenceTrackPoints.windowed(2).sumOf {
-                val startPoint = it[0]
-                val endPoint = it[1]
-                FloatArray(1).apply {
-                    Location.distanceBetween(
-                        startPoint.latitude,
-                        startPoint.longitude,
-                        endPoint.latitude,
-                        endPoint.longitude,
-                        this
-                    )
-                }[0].toDouble()
-            }.toFloat()
+            val track = moshi.adapter(Track::class.java).fromJson(file.readText()) ?: return null
+            if (track.track.isEmpty()) null
+            else TrackProgress(track.track.map { TrackProgress.Point(it.latitude, it.longitude) })
         } catch (e: Exception) {
             Log.e("NAV_SERVICE", "Error loading track: ${e.message}")
+            null
         }
-    }
-
-    private fun findNearestReferenceIndex(loc: Location): Int {
-        return referenceTrackPoints.indices.minByOrNull { idx ->
-            FloatArray(1).apply {
-                Location.distanceBetween(
-                    loc.latitude,
-                    loc.longitude,
-                    referenceTrackPoints[idx].latitude,
-                    referenceTrackPoints[idx].longitude,
-                    this
-                )
-            }[0]
-        } ?: 0
     }
 
     private fun startForegroundService() {
@@ -280,10 +187,15 @@ class TrackNavigationService : Service() {
             putExtra("lng", location.longitude)
             putExtra("distance", calculateDistanceMeters() / 1000f)
             putExtra("duration", (System.nanoTime() - startTime) / 1_000_000)
-            putExtra("progress", currentTargetIndex.toFloat() / referenceTrackPoints.size.toFloat())
-            putExtra("nearestIndex", lastNearestIndex)
-            putExtra("offTrack", lastOffTrack)
-            putExtra("isFinished", currentTargetIndex >= referenceTrackPoints.size)
+            progress?.let {
+                putExtra("segment", it.segment)
+                putExtra("projectedLat", it.projected.latitude)
+                putExtra("projectedLng", it.projected.longitude)
+                putExtra("along", it.along.toFloat())
+                putExtra("remaining", it.remaining.toFloat())
+                putExtra("offTrack", it.offTrack)
+            }
+            putExtra("isFinished", navigationCompleted)
             putExtra("speed", speedKmh)
             if (location.hasBearing()) {
                 putExtra("bearing", location.bearing)
@@ -292,60 +204,22 @@ class TrackNavigationService : Service() {
         LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(intent)
     }
 
-    private fun checkCompletionCriteria() {
-        if (navigationCompleted) return
-        if (referenceTrackPoints.isEmpty() || navigationPath.isEmpty()) return
-        val endReached = visitedIndices.contains(referenceTrackPoints.lastIndex)
-        val middleEnough = isPathFollowingReference()
-        val traveledMeters = calculateDistanceMeters()
+    private fun checkCompletionCriteria(progress: TrackProgress) {
+        if (navigationCompleted || navigationPath.isEmpty()) return
+        val endReached = progress.remaining <= POINT_VISIT_THRESHOLD &&
+                progress.distanceToTrack <= POINT_VISIT_THRESHOLD
+        val middleEnough = closeFixes.toFloat() / trackedFixes >= REQUIRED_MIDDLE_POINTS_RATIO
         val lengthSimilar =
-            traveledMeters >= referenceTrackLengthMeters * (1f - LENGTH_SIMILARITY_RATIO)
+            calculateDistanceMeters() >= progress.length * (1f - LENGTH_SIMILARITY_RATIO)
 
         if (endReached && lengthSimilar && middleEnough) {
             navigationCompleted = true
-            currentTargetIndex = referenceTrackPoints.size
             isNavigating = false
             lastNavigationData = calculateTravelData()
             lastNavigationPoints = calculateTravelPoints()
             updateHandler.removeCallbacks(updateRunnable)
             stopSelf()
         }
-    }
-
-    private fun isPathFollowingReference(): Boolean {
-        if (referenceTrackPoints.size < 2 || navigationPath.size < 2) return false
-
-        val closeCount = navigationPath.zipWithNext { start, end ->
-            referenceTrackPoints.windowed(2).minOf { seg ->
-                distancePointToSegment(
-                    start.latitude,
-                    start.longitude,
-                    end.latitude,
-                    end.longitude,
-                    seg[0].latitude,
-                    seg[0].longitude
-                )
-            }
-        }.count { it <= OFF_TRACK_THRESHOLD }
-
-        return closeCount.toFloat() / (navigationPath.size - 1) >= REQUIRED_MIDDLE_POINTS_RATIO
-    }
-
-    private fun distancePointToSegment(
-        lat1: Double,
-        lng1: Double,
-        lat2: Double,
-        lng2: Double,
-        refLat1: Double,
-        refLng1: Double
-    ): Float {
-        val a = FloatArray(1)
-        val b = FloatArray(1)
-        val c = FloatArray(1)
-        Location.distanceBetween(lat1, lng1, refLat1, refLng1, a)
-        Location.distanceBetween(lat2, lng2, refLat1, refLng1, b)
-        Location.distanceBetween(lat1, lng1, lat2, lng2, c)
-        return min(a[0], min(b[0], c[0]))
     }
 
     private fun calculateDistanceMeters() =

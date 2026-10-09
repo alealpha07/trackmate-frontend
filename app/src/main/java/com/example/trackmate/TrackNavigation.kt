@@ -16,7 +16,6 @@ import androidx.navigation.fragment.navArgs
 import com.example.trackmate.services.*
 import com.google.android.gms.location.*
 import com.google.android.material.button.MaterialButtonToggleGroup
-import com.google.android.material.chip.ChipGroup
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.navigation.fragment.findNavController
 import kotlinx.coroutines.*
@@ -32,7 +31,6 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 import java.io.FileOutputStream
-import kotlin.math.roundToInt
 
 fun formatTime(seconds: Float): String {
     val totalSeconds = seconds.toInt()
@@ -48,8 +46,6 @@ class TrackNavigation : Fragment() {
     private lateinit var myLocationOverlay: AnimatedMyLocationOverlay
     private lateinit var compass: MapCompassController
     private lateinit var btnRecord: Button
-    private lateinit var txtDistance: TextView
-    private lateinit var txtDuration: TextView
     private lateinit var txtTrackName: TextView
     private lateinit var txtTrackVehicle: TextView
     private lateinit var txtTrackLength: TextView
@@ -57,18 +53,15 @@ class TrackNavigation : Fragment() {
     private lateinit var txtUserBestAvg: TextView
     private lateinit var txtUserBestSpd: TextView
     private lateinit var statsLayout: LinearLayout
-    private lateinit var txtCurrentSpeed: TextView
+    private lateinit var rideStats: RideStatsCard
     private lateinit var btnMoreDetails: Button
-    private lateinit var vehicleChips: ChipGroup
     private lateinit var txtVehicleMissing: TextView
-    private lateinit var travelVehicleSection: View
-    private lateinit var travelVehicleToggle: MaterialButtonToggleGroup
     // Known once the track details load
     private var trackVehicle: Vehicle? = null
     // The vehicle navigated with: one of the track's class in the user's profile
     private var travelVehicle: Vehicle? = null
-    // The vehicle whose bests were last asked for, so an older answer doesn't overwrite them
-    private var bestsVehicle: Vehicle? = null
+    // The track's class vehicles in the profile; with more than one, Start asks which
+    private var offeredVehicles = emptyList<Vehicle>()
 
     private var referencePolyline: Polyline? = null
     private var passedPolyline: Polyline? = null
@@ -118,7 +111,7 @@ class TrackNavigation : Fragment() {
     }
 
     // Keeps the speed readout live while previewing/finishing a track, i.e. outside of an
-    // active navigation, which otherwise drives txtCurrentSpeed via its own broadcast.
+    // active navigation, which otherwise drives the speed via its own broadcast.
     private fun startIdleSpeedUpdates() {
         if (idleSpeedCallback != null) return
         if (ActivityCompat.checkSelfPermission(
@@ -137,7 +130,7 @@ class TrackNavigation : Fragment() {
                 val speedKmh = if (location.hasSpeed() && location.speed <= MAX_PLAUSIBLE_SPEED_MPS) {
                     location.speed * 3.6f
                 } else 0f
-                txtCurrentSpeed.text = "Speed: ${speedKmh.roundToInt()} km/h"
+                rideStats.showSpeed(speedKmh)
             }
         }
         fusedLocationClient.requestLocationUpdates(request, idleSpeedCallback!!, Looper.getMainLooper())
@@ -152,6 +145,7 @@ class TrackNavigation : Fragment() {
     // Interpolates the map's position/rotation between successive GPS fixes so panning and
     // tilting read as continuous motion instead of a snap on every ~500ms location update.
     private var motionAnimator = createMotionAnimator()
+    private lateinit var followZoom: FollowZoom
 
     private fun createMotionAnimator() =
         MapMotionAnimator { point, bearing -> onLocationFrame(point, bearing) }
@@ -164,14 +158,15 @@ class TrackNavigation : Fragment() {
             val lat = intent.getDoubleExtra("lat", Double.NaN)
             val lng = intent.getDoubleExtra("lng", Double.NaN)
             val isFinished = intent.getBooleanExtra("isFinished", false)
-            val nearestIndex = intent.getIntExtra("nearestIndex", -1)
+            val segment = intent.getIntExtra("segment", -1)
+            val projectedLat = intent.getDoubleExtra("projectedLat", Double.NaN)
+            val projectedLng = intent.getDoubleExtra("projectedLng", Double.NaN)
             val offTrack = intent.getBooleanExtra("offTrack", false)
             val bearing = intent.getFloatExtra("bearing", Float.NaN)
             val speed = intent.getFloatExtra("speed", 0f)
 
-            txtCurrentSpeed.text = "Speed: ${speed.roundToInt()} km/h"
-            txtDistance.text = "Distance: ${String.format("%.2f", distance)} km"
-            txtDuration.text = "Duration: ${formatTime((duration / 1000).toFloat())}"
+            followZoom.onSpeed(speed)
+            rideStats.show(distance, duration, speed)
 
             if (!lat.isNaN() && !lng.isNaN()) {
                 val newPoint = GeoPoint(lat, lng)
@@ -187,9 +182,9 @@ class TrackNavigation : Fragment() {
                 }
             }
 
-            if (nearestIndex >= 0 && referencePoints.isNotEmpty()) {
-                val clampedIndex = nearestIndex.coerceAtMost(referencePoints.size - 1)
-                passedPolyline?.setPoints(referencePoints.subList(0, clampedIndex + 1))
+            if (segment >= 0 && !projectedLat.isNaN() && referencePoints.isNotEmpty()) {
+                val passedPoints = referencePoints.subList(0, segment.coerceAtMost(referencePoints.size - 1) + 1)
+                passedPolyline?.setPoints(passedPoints + GeoPoint(projectedLat, projectedLng))
                 mapView.invalidate()
             }
 
@@ -231,7 +226,8 @@ class TrackNavigation : Fragment() {
 
         if (!userIsInteracting) {
             // The look-ahead offset follows the direction of travel even when locked north
-            val cameraTarget = computeOffset(point, bearing.toDouble(), 30.0)
+            followZoom.step()
+            val cameraTarget = computeOffset(point, bearing.toDouble(), followLookAhead(mapView.zoomLevelDouble))
             mapView.mapOrientation = -compass.resolveBearing(bearing)
             mapView.controller.setCenter(cameraTarget)
         }
@@ -259,15 +255,10 @@ class TrackNavigation : Fragment() {
         txtUserBest = view.findViewById(R.id.txtUserBest)
         txtUserBestAvg = view.findViewById(R.id.txtUserBestAvg)
         txtUserBestSpd = view.findViewById(R.id.txtUserBestSpd)
-        txtDistance = view.findViewById(R.id.txtDistance)
-        txtDuration = view.findViewById(R.id.txtDuration)
         statsLayout = view.findViewById(R.id.statsLayout)
-        txtCurrentSpeed = view.findViewById(R.id.txtCurrentSpeed)
+        rideStats = RideStatsCard(view.findViewById(R.id.rideStats))
         btnMoreDetails = view.findViewById(R.id.btnMoreDetails)
-        vehicleChips = view.findViewById(R.id.vehicleChips)
         txtVehicleMissing = view.findViewById(R.id.txtVehicleMissing)
-        travelVehicleSection = view.findViewById(R.id.travelVehicleSection)
-        travelVehicleToggle = view.findViewById(R.id.travelVehicleToggle)
 
         api = (requireActivity() as MainActivity).trackService
         questApi = (requireActivity() as MainActivity).questService
@@ -295,7 +286,7 @@ class TrackNavigation : Fragment() {
         mapView.setTileSource(tileSourceFor(mapStyle))
         mapView.setMultiTouchControls(true)
         mapView.controller.setZoom(DEFAULT_MAP_ZOOM)
-        applyOverlayTextColor(mapStyle, txtDistance, txtDuration, txtCurrentSpeed)
+        followZoom = FollowZoom(mapView)
 
         mapView.overlays.add(buildCopyrightOverlay(requireContext()))
 
@@ -310,10 +301,7 @@ class TrackNavigation : Fragment() {
             btnLayers = view.findViewById(R.id.btnLayers),
             btnMyLocation = view.findViewById(R.id.btnMyLocation),
             btnZoomIn = view.findViewById(R.id.btnZoomIn),
-            btnZoomOut = view.findViewById(R.id.btnZoomOut),
-            onStyleChanged = { style ->
-                applyOverlayTextColor(style, txtDistance, txtDuration, txtCurrentSpeed)
-            }
+            btnZoomOut = view.findViewById(R.id.btnZoomOut)
         )
         compass = MapCompassController(mapView, view.findViewById(R.id.btnCompass))
 
@@ -367,10 +355,8 @@ class TrackNavigation : Fragment() {
                         txtTrackName.text = details.name
                         txtTrackVehicle.showTrackVehicle(vehicle)
                         trackVehicle = vehicle
-                        vehicle?.let {
-                            vehicleChips.bindVehicleChips(it) { selected -> loadBests(selected) }
-                            bindTravelVehicle(it, profile)
-                        }
+                        showBest(details.userBest)
+                        vehicle?.let { bindTravelVehicle(it, profile) }
                     }
                 }
 
@@ -388,33 +374,38 @@ class TrackNavigation : Fragment() {
     }
 
     /**
-     * The travel's vehicle: the profile's vehicles of the track's class, the last used preselected. Car and motorcycle
-     * tracks offer a choice when both are in the profile; with none, Start stays disabled.
+     * The travel's vehicle: the profile's vehicles of the track's class, the last used preselected. With none, Start
+     * stays disabled.
      */
     private fun bindTravelVehicle(trackVehicle: Vehicle, profile: List<Vehicle>) {
-        val buttons = mapOf(Vehicle.CAR to R.id.btnTravelCar, Vehicle.MOTORCYCLE to R.id.btnTravelMotorcycle)
-        val offered = trackVehicle.classVehicles.filter { it in profile }
+        offeredVehicles = trackVehicle.classVehicles.filter { it in profile }
         val lastUsed = Vehicle.lastUsed(requireContext())
-        travelVehicle = offered.firstOrNull { it == lastUsed } ?: offered.firstOrNull()
+        travelVehicle = offeredVehicles.firstOrNull { it == lastUsed } ?: offeredVehicles.firstOrNull()
 
-        val classNames = trackVehicle.classVehicles.map { getString(it.label) }
-        txtVehicleMissing.text = getString(
-            R.string.navigate_vehicle_missing,
-            if (classNames.size == 2) getString(R.string.vehicle_or, classNames[0], classNames[1]) else classNames[0]
-        )
-        txtVehicleMissing.visibility = if (offered.isEmpty()) View.VISIBLE else View.GONE
-
-        travelVehicleSection.visibility = if (offered.size > 1) View.VISIBLE else View.GONE
-        travelVehicleToggle.clearOnButtonCheckedListeners()
-        travelVehicle?.let { vehicle -> buttons[vehicle]?.let { travelVehicleToggle.check(it) } }
-        travelVehicleToggle.addOnButtonCheckedListener { _, buttonId, checked ->
-            if (!checked) return@addOnButtonCheckedListener
-            travelVehicle = buttons.entries.first { it.value == buttonId }.key
-            // Show the bests of the vehicle about to be navigated with
-            vehicleChips.selectVehicle(travelVehicle!!)
-        }
-        travelVehicle?.let { vehicleChips.selectVehicle(it) }
+        txtVehicleMissing.text = getString(R.string.navigate_vehicle_missing, trackVehicle.classLabel(requireContext()))
+        txtVehicleMissing.visibility = if (offeredVehicles.isEmpty()) View.VISIBLE else View.GONE
         updateStartButton()
+    }
+
+    /** Asks which vehicle to navigate by when the profile has both car and motorcycle; the last used is preselected. */
+    private fun chooseTravelVehicle(onChosen: () -> Unit) {
+        if (offeredVehicles.size < 2) {
+            onChosen()
+            return
+        }
+        val buttons = mapOf(Vehicle.CAR to R.id.btnTravelCar, Vehicle.MOTORCYCLE to R.id.btnTravelMotorcycle)
+        val dialogView = layoutInflater.inflate(R.layout.dialog_navigate_by, null)
+        val toggle = dialogView.findViewById<MaterialButtonToggleGroup>(R.id.travelVehicleToggle)
+        buttons[travelVehicle]?.let { toggle.check(it) }
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.navigate_by)
+            .setView(dialogView)
+            .setPositiveButton(R.string.navigate_start) { _, _ ->
+                travelVehicle = buttons.entries.first { it.value == toggle.checkedButtonId }.key
+                onChosen()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun updateStartButton() {
@@ -423,23 +414,11 @@ class TrackNavigation : Fragment() {
             (referencePoints.isNotEmpty() && (trackVehicle == null || travelVehicle != null))
     }
 
-    /** The user's bests with [vehicle]: stats are split by vehicle. */
-    private fun loadBests(vehicle: Vehicle) {
-        bestsVehicle = vehicle
-        apiCallCoroutine.launch {
-            try {
-                val response = api.getTrack(args.trackId, vehicle.id)
-                val best = response.body()?.userBest.takeIf { response.isSuccessful }
-                withContext(Dispatchers.Main) {
-                    if (!isAdded || bestsVehicle != vehicle) return@withContext
-                    txtUserBest.text = "Your Best Time: ${best?.let { formatTime(it.time) } ?: "-"}"
-                    txtUserBestAvg.text = "Your Best Avg Speed: ${best?.let { "${it.averageSpeed} km/h" } ?: "-"}"
-                    txtUserBestSpd.text = "Your Best Speed: ${best?.let { "${it.maxSpeed} km/h" } ?: "-"}"
-                }
-            } catch (e: Exception) {
-                Log.d("API-ERROR", e.stackTraceToString())
-            }
-        }
+    /** The user's best travel with any vehicle; the per-vehicle split is in the graphs. */
+    private fun showBest(best: TravelStatistics?) {
+        txtUserBest.text = "Your Best Time: ${best?.let { formatTime(it.time) } ?: "-"}"
+        txtUserBestAvg.text = "Your Best Avg Speed: ${best?.let { "${it.averageSpeed} km/h" } ?: "-"}"
+        txtUserBestSpd.text = "Your Best Speed: ${best?.let { "${it.maxSpeed} km/h" } ?: "-"}"
     }
 
     private fun setupTrackOnMap(points: List<GeoPoint>) {
@@ -532,11 +511,8 @@ class TrackNavigation : Fragment() {
             }
             else{
                 statsLayout.visibility = View.GONE
-                txtDistance.visibility = View.VISIBLE
-                txtDuration.visibility = View.VISIBLE
-                txtCurrentSpeed.visibility = View.VISIBLE
                 btnRecord.text = "Cancel Navigation"
-                mapView.controller.setZoom(TRACKING_ZOOM_LEVEL)
+                followZoom.reset()
                 needsBearingSnap = true
                 isNavigatingUiActive = true
                 compass.setActive(true)
@@ -616,30 +592,7 @@ class TrackNavigation : Fragment() {
                 return@addOnSuccessListener
             }
 
-            resetTravelledPath()
-            navigationFinishHandled = false
-            isNavigatingUiActive = true
-            stopIdleSpeedUpdates()
-            TrackNavigationService.isNavigating = true
-            statsLayout.visibility = View.GONE
-            btnRecord.text = "Cancel Navigation"
-            compass.setActive(true)
-            myLocationOverlay.followsAnimation = true
-            mapView.controller.setZoom(TRACKING_ZOOM_LEVEL)
-
-            val sourceFile = File(requireContext().filesDir, "navigation.json")
-            val destinationFile = File(requireContext().filesDir, "navigation_track.json")
-            sourceFile.copyTo(destinationFile, overwrite = true)
-
-            travelVehicle?.let { Vehicle.saveLastUsed(requireContext(), it) }
-            val intent = Intent(requireContext(), TrackNavigationService::class.java)
-            intent.putExtra("trackId", args.trackId)
-            intent.putExtra("vehicle", travelVehicle?.id)
-            requireContext().startForegroundService(intent)
-
-            txtDistance.visibility = View.VISIBLE
-            txtDuration.visibility = View.VISIBLE
-            txtCurrentSpeed.visibility = View.VISIBLE
+            chooseTravelVehicle { beginNavigation() }
         }.addOnFailureListener {
             Toast.makeText(
                 requireContext(),
@@ -647,6 +600,29 @@ class TrackNavigation : Fragment() {
                 Toast.LENGTH_SHORT
             ).show()
         }
+    }
+
+    private fun beginNavigation() {
+        resetTravelledPath()
+        navigationFinishHandled = false
+        isNavigatingUiActive = true
+        stopIdleSpeedUpdates()
+        TrackNavigationService.isNavigating = true
+        statsLayout.visibility = View.GONE
+        btnRecord.text = "Cancel Navigation"
+        compass.setActive(true)
+        myLocationOverlay.followsAnimation = true
+        followZoom.reset(clearSpeed = true)
+
+        val sourceFile = File(requireContext().filesDir, "navigation.json")
+        val destinationFile = File(requireContext().filesDir, "navigation_track.json")
+        sourceFile.copyTo(destinationFile, overwrite = true)
+
+        travelVehicle?.let { Vehicle.saveLastUsed(requireContext(), it) }
+        val intent = Intent(requireContext(), TrackNavigationService::class.java)
+        intent.putExtra("trackId", args.trackId)
+        intent.putExtra("vehicle", travelVehicle?.id)
+        requireContext().startForegroundService(intent)
     }
 
 
@@ -657,11 +633,7 @@ class TrackNavigation : Fragment() {
         compass.setActive(false)
         myLocationOverlay.followsAnimation = false
 
-        txtDistance.text = "Distance: 0.00 km"
-        txtDuration.text = "Duration: 0:0:0"
-        txtCurrentSpeed.text = "Speed: 0 km/h"
-        txtDistance.visibility = View.GONE
-        txtDuration.visibility = View.GONE
+        rideStats.reset()
         statsLayout.visibility = View.VISIBLE
 
         val intent = Intent(requireContext(), TrackNavigationService::class.java)
