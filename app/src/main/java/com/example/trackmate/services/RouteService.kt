@@ -73,6 +73,12 @@ data class GeocodeResult(
     val lng: Double
 )
 
+@JsonClass(generateAdapter = true)
+data class VehicleInfo(
+    val id: String,
+    val plannable: Boolean
+)
+
 interface RouteService {
     // a Call so cancelling stops the stream and the server download
     @Streaming
@@ -91,4 +97,9 @@ interface RouteService {
         @Query("full") full: String? = null,
         @Query("lang") lang: String = "en"
     ): Response<List<GeocodeResult>>
+
+    @GET("vehicle")
+    suspend fun vehicles(
+        @Query("lang") lang: String = "en"
+    ): Response<List<VehicleInfo>>
 }

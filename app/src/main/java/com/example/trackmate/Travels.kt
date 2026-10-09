@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
@@ -31,6 +32,7 @@ class TravelAdapter(
 
     inner class TravelViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val txtName: TextView = view.findViewById(R.id.txtTrackName)
+        val imgVehicle: ImageView = view.findViewById(R.id.imgVehicle)
         val txtTime: TextView = view.findViewById(R.id.txtTime)
         val txtMaxSpeed: TextView = view.findViewById(R.id.txtMaxSpeed)
         val txtAvgSpeed: TextView = view.findViewById(R.id.txtAvgSpeed)
@@ -47,6 +49,7 @@ class TravelAdapter(
     override fun onBindViewHolder(holder: TravelViewHolder, position: Int) {
         val travel = travels[position]
         holder.txtName.text = travel.name
+        holder.imgVehicle.bindVehicle(Vehicle.fromId(travel.vehicle))
         holder.txtTime.text = "Time: ${formatTime(travel.time)}"
         holder.txtMaxSpeed.text = "Max Speed: ${String.format("%.2f", travel.maxSpeed)} km/h"
         holder.txtAvgSpeed.text =

@@ -2,7 +2,6 @@ package com.example.trackmate
 
 import android.Manifest
 import android.animation.ValueAnimator
-import android.app.AlertDialog
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Color
@@ -126,6 +125,8 @@ class TrackPlanner : Fragment() {
     private val rows = mutableListOf<Row>()
     private var activeRow: Row? = null // the row a map tap fills
     private var policy = "safest"
+    // changing it clears the route
+    private var vehicle = Vehicle.BICYCLE
     // safety filters on by default
     private val filterStates = linkedMapOf("cyclewaysOnly" to true, "avoidLts4" to true, "avoidUnpaved" to false)
     private var currentRoute: PlannedRoute? = null
@@ -459,10 +460,28 @@ class TrackPlanner : Fragment() {
     }
 
     private fun setupOptions(view: View) {
-        // one vehicle for now
         val vehicleInput = view.findViewById<MaterialAutoCompleteTextView>(R.id.vehicleInput)
-        vehicleInput.setSimpleItems(arrayOf(getString(R.string.plan_bicycle)))
-        vehicleInput.setText(getString(R.string.plan_bicycle), false)
+        fun showVehicles(vehicles: List<Vehicle>) {
+            vehicleInput.setSimpleItems(vehicles.map { getString(it.label) }.toTypedArray())
+            vehicleInput.setText(getString(vehicle.label), false)
+            vehicleInput.setOnItemClickListener { _, _, position, _ ->
+                if (vehicles[position] == vehicle) return@setOnItemClickListener
+                vehicle = vehicles[position]
+                updateFilterGroups()
+                routeChanged()
+            }
+        }
+        showVehicles(listOf(vehicle))
+        // only vehicles the server can plan for
+        viewLifecycleOwner.lifecycleScope.launch {
+            val plannable = runCatching { routeService.vehicles().body() }.getOrNull()
+                ?.filter { it.plannable }
+                ?.mapNotNull { Vehicle.fromId(it.id) }
+            if (!plannable.isNullOrEmpty()) {
+                if (vehicle !in plannable) vehicle = plannable.first()
+                showVehicles(plannable)
+            }
+        }
 
         policyGroup.check(if (policy == "safest") R.id.btnSafest else R.id.btnShortest)
         policyGroup.addOnButtonCheckedListener { _, id, checked ->
@@ -696,7 +715,7 @@ class TrackPlanner : Fragment() {
             start = points.first(),
             via = points.subList(1, points.size - 1),
             end = points.last(),
-            vehicle = "bicycle",
+            vehicle = vehicle.id,
             policy = policy,
             filters = selectedFilters()
         )
@@ -803,27 +822,22 @@ class TrackPlanner : Fragment() {
     // #region save and navigate
     private fun askTrackName(onSaved: (Int) -> Unit) {
         val route = currentRoute ?: return
-        val dialogView = layoutInflater.inflate(R.layout.dialog_track_name, null)
-        val editText = dialogView.findViewById<EditText>(R.id.editTrackName)
-        editText.setText(rows.joinToString(" → ") { pointText(it.point) })
-        AlertDialog.Builder(requireContext())
-            .setTitle(R.string.plan_save_prompt)
-            .setView(dialogView)
-            .setPositiveButton(R.string.plan_save_button) { _, _ ->
-                val name = editText.text.toString().trim()
-                if (name.isNotEmpty()) saveRoute(route, name, onSaved)
-            }
-            .setNegativeButton(R.string.plan_cancel, null)
-            .showAboveKeyboard()
+        showTrackNameDialog(
+            title = getString(R.string.plan_save_prompt),
+            name = rows.joinToString(" → ") { pointText(it.point) },
+            vehicle = null,
+            saveLabel = getString(R.string.plan_save_button),
+            cancelLabel = getString(R.string.plan_cancel)
+        ) { name, _, done -> saveRoute(route, name, onSaved, done) }
     }
 
-    private fun saveRoute(route: PlannedRoute, name: String, onSaved: (Int) -> Unit) {
+    private fun saveRoute(route: PlannedRoute, name: String, onSaved: (Int) -> Unit, done: (String?) -> Unit) {
         setSaving(true)
         // fragment scope so a track without its file still gets deleted
         lifecycleScope.launch {
             var trackId: Int? = null
             try {
-                val created = trackService.createTrack(NewTrackRequest(name))
+                val created = trackService.createTrack(NewTrackRequest(name, vehicle.id))
                 trackId = created.body()?.id
                 if (!created.isSuccessful || trackId == null) throw PlanError(created.errorBody()?.string().orEmpty())
                 val json = moshi.adapter(PlannedTrackFile::class.java)
@@ -834,6 +848,7 @@ class TrackPlanner : Fragment() {
                 val uploaded = trackService.uploadTrack(file, trackId)
                 if (!uploaded.isSuccessful) throw PlanError(uploaded.errorBody()?.string().orEmpty())
                 if (currentRoute === route) savedTrackId = trackId
+                done(null)
                 if (view != null) showStatus(getString(R.string.plan_saved))
                 onSaved(trackId)
             } catch (e: Exception) {
@@ -842,9 +857,9 @@ class TrackPlanner : Fragment() {
                     withContext(NonCancellable) { runCatching { trackService.deleteTrack(id) } }
                 }
                 if (e is CancellationException) throw e
-                if (view != null) {
-                    showStatus(e.message?.takeIf { e is PlanError && it.isNotBlank() } ?: getString(R.string.error_generic), true)
-                }
+                val error = e.message?.takeIf { e is PlanError && it.isNotBlank() } ?: getString(R.string.track_save_failed)
+                done(error)
+                if (view != null) showStatus(error, true)
             } finally {
                 if (view != null) setSaving(false)
             }

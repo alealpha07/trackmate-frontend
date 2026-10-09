@@ -8,14 +8,17 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.example.trackmate.services.AuthService
 import com.example.trackmate.services.EditProfileRequest
+import com.example.trackmate.services.EditVehiclesRequest
 import com.example.trackmate.services.ProfileService
 import com.example.trackmate.services.UserResponse
 import com.example.trackmate.util.ImageUtils
@@ -33,6 +36,7 @@ class ProfileEdit : Fragment() {
     private lateinit var btnSaveProfile: Button
     private lateinit var imgProfile: ImageView
     private lateinit var btnChangeImage: Button
+    private lateinit var vehicleChecks: Map<Vehicle, CheckBox>
     private lateinit var authApi: AuthService
     private lateinit var profileApi: ProfileService
     private var selectedImageUri: Uri? = null
@@ -58,6 +62,7 @@ class ProfileEdit : Fragment() {
         btnChangeImage = view.findViewById(R.id.btnChangeImage)
         profileApi = (activity as MainActivity).profileService
         authApi = (activity as MainActivity).authService
+        vehicleChecks = bindVehicleChecks(view.findViewById(R.id.vehicleChecks))
 
         apiCallCoroutine.launch {
             try {
@@ -78,6 +83,10 @@ class ProfileEdit : Fragment() {
                         etBio.setText(user.bio)
                     }
                 }
+                val vehicles = Vehicle.loadProfile(requireContext().applicationContext, profileApi)
+                withContext(Dispatchers.Main) {
+                    vehicleChecks.forEach { (vehicle, check) -> check.isChecked = vehicle in vehicles }
+                }
             } catch (e: Exception) {
                 Log.d("API-ERROR", e.stackTraceToString())
             }
@@ -89,6 +98,12 @@ class ProfileEdit : Fragment() {
 
         btnSaveProfile.setOnClickListener {
             val bio = etBio.text.toString().trim()
+            val vehicles = vehicleChecks.filterValues { it.isChecked }.keys.toList()
+            if (vehicles.isEmpty()) {
+                Toast.makeText(requireContext(), R.string.profile_vehicles_missing, Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            val appContext = requireContext().applicationContext
             apiCallCoroutine.launch {
                 try {
                     if (selectedImageUri != null) {
@@ -110,8 +125,12 @@ class ProfileEdit : Fragment() {
                         }
                     }
 
-                    val response =
+                    val bioResponse =
                         (activity as MainActivity).profileService.editProfile(EditProfileRequest(bio))
+                    val response = if (bioResponse.isSuccessful) {
+                        profileApi.editVehicles(EditVehiclesRequest(vehicles.map { it.id }))
+                    } else bioResponse
+                    if (response.isSuccessful) Vehicle.saveProfile(appContext, vehicles)
                     withContext(Dispatchers.Main) {
                         if (response.isSuccessful) {
                             Toast.makeText(
@@ -132,5 +151,18 @@ class ProfileEdit : Fragment() {
         }
 
         return view
+    }
+
+    private fun bindVehicleChecks(container: LinearLayout): Map<Vehicle, CheckBox> {
+        val profile = Vehicle.profile(requireContext())
+        return Vehicle.entries.associateWith { vehicle ->
+            CheckBox(requireContext()).apply {
+                setText(vehicle.label)
+                setCompoundDrawablesRelativeWithIntrinsicBounds(vehicle.icon, 0, 0, 0)
+                compoundDrawablePadding = (8 * resources.displayMetrics.density).toInt()
+                isChecked = vehicle in profile
+                container.addView(this)
+            }
+        }
     }
 }

@@ -1,7 +1,6 @@
 package com.example.trackmate
 
 import android.Manifest
-import android.app.AlertDialog
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -13,7 +12,6 @@ import android.os.Looper
 import android.util.Log
 import android.view.*
 import android.widget.Button
-import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -163,18 +161,15 @@ class Navigate : Fragment() {
 
     private val trackFileSavedReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            val dialogView = layoutInflater.inflate(R.layout.dialog_track_name, null)
-            val editText = dialogView.findViewById<EditText>(R.id.editTrackName)
-
-            AlertDialog.Builder(requireContext())
-                .setTitle("Save Track")
-                .setMessage("Do you want to save this track?")
-                .setView(dialogView)
-                .setPositiveButton("Save") { _, _ ->
-                    saveTrack(editText.text.toString())
-                }
-                .setNegativeButton("Discard", null)
-                .showAboveKeyboard()
+            showTrackNameDialog(
+                title = "Save Track",
+                message = "Do you want to save this track?",
+                vehicle = Vehicle.lastUsed(requireContext()),
+                vehicles = Vehicle.profile(requireContext()),
+                saveLabel = "Save",
+                cancelLabel = "Discard",
+                confirmCancel = "Discard this recording? It can't be recovered."
+            ) { name, vehicle, done -> saveTrack(name, vehicle!!, done) }
         }
     }
 
@@ -241,6 +236,10 @@ class Navigate : Fragment() {
         txtDistance = view.findViewById(R.id.txtDistance)
         txtDuration = view.findViewById(R.id.txtDuration)
         setupMap(view)
+        // for the save dialog when offline
+        val appContext = requireContext().applicationContext
+        val profileApi = (activity as MainActivity).profileService
+        apiCallCoroutine.launch { Vehicle.loadProfile(appContext, profileApi) }
         btnRecord.text =
             if (TrackRecordingService.isRecording) "Stop Recording" else "Start Recording"
         btnRecord.setOnClickListener {
@@ -336,88 +335,68 @@ class Navigate : Fragment() {
         startIdleSpeedUpdates()
     }
 
-    private fun saveTrack(trackName: String) {
+    private fun saveTrack(trackName: String, vehicle: Vehicle, done: (String?) -> Unit) {
         val file = File(requireContext().filesDir, "track.json")
         if (!file.exists()) {
-            Toast.makeText(requireContext(), "No track file found", Toast.LENGTH_SHORT).show()
+            done("No track file found")
             return
         }
-
-        val requestFile = file.asRequestBody("application/json".toMediaTypeOrNull())
-        val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
-
+        val appContext = requireContext().applicationContext
+        val failedText = getString(R.string.track_save_failed)
         val api = (requireActivity() as MainActivity).trackService
 
         apiCallCoroutine.launch {
-            try {
-                val createResponse = api.createTrack(NewTrackRequest(trackName))
-                if (!createResponse.isSuccessful || createResponse.body() == null) {
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(
-                            requireContext(),
-                            createResponse.errorBody()?.string() ?: "Error",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                    Log.d("API-CALL", createResponse.message())
-                    return@launch
+            var trackId: Int? = null
+            val error = try {
+                val createResponse = api.createTrack(NewTrackRequest(trackName, vehicle.id))
+                trackId = createResponse.body()?.id
+                if (!createResponse.isSuccessful || trackId == null) {
+                    createResponse.errorBody()?.string()?.takeIf { it.isNotBlank() } ?: failedText
                 } else {
-                    questApi.increaseQuest(
-                        IncreaseQuestRequest(
-                            QuestType.RECORD_TRACK.toString(),
-                            1
-                        )
-                    )
+                    val requestFile = file.asRequestBody("application/json".toMediaTypeOrNull())
+                    val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
+                    val uploadResponse = api.uploadTrack(body, trackId)
+                    if (uploadResponse.isSuccessful) null
+                    else uploadResponse.errorBody()?.string()?.takeIf { it.isNotBlank() } ?: failedText
                 }
-                val newTrack = createResponse.body()!!
+            } catch (e: Exception) {
+                Log.d("API-ERROR", e.stackTraceToString())
+                failedText
+            }
+            if (error != null) {
+                // delete the track if its file failed, saving again recreates it
+                trackId?.let { id -> runCatching { api.deleteTrack(id) } }
+                withContext(Dispatchers.Main) { done(error) }
+                return@launch
+            }
+            Vehicle.saveLastUsed(appContext, vehicle)
 
-                val uploadResponse = api.uploadTrack(body, newTrack.id)
-                if (!uploadResponse.isSuccessful) {
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(
-                            requireContext(),
-                            uploadResponse.errorBody()?.string() ?: "Error",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                    return@launch
-                }
-
-                var travelData = TrackRecordingService.getLastTravelData()?.copy(id = newTrack.id)
-                if (travelData == null) {
-                    travelData = NewTravelRequest(newTrack.id, 0.0f, 0.0f, 0.0f, 0.0f)
-                }
+            // the track is saved, only the travel stats would be missing
+            val travelError = try {
+                questApi.increaseQuest(IncreaseQuestRequest(QuestType.RECORD_TRACK.toString(), 1, vehicle.id))
+                val travelData = TrackRecordingService.getLastTravelData()?.copy(id = trackId!!, vehicle = vehicle.id)
+                    ?: NewTravelRequest(trackId!!, 0.0f, 0.0f, 0.0f, 0.0f, vehicle.id)
                 val travelResponse = api.createTravel(travelData)
                 if (travelResponse.isSuccessful) {
                     questApi.increaseQuest(
-                        IncreaseQuestRequest(
-                            QuestType.TRAVEL_DISTANCE.toString(),
-                            travelData.distance.toInt()
-                        )
+                        IncreaseQuestRequest(QuestType.TRAVEL_DISTANCE.toString(), travelData.distance.toInt(), vehicle.id)
                     )
                     travelResponse.body()?.id?.let { travelId ->
                         val travelRequestFile = file.asRequestBody("application/json".toMediaTypeOrNull())
                         val travelBody = MultipartBody.Part.createFormData("file", file.name, travelRequestFile)
                         api.uploadTravelFile(travelBody, travelId)
                     }
-                }
-                withContext(Dispatchers.Main) {
-                    if (travelResponse.isSuccessful) {
-                        Toast.makeText(
-                            requireContext(),
-                            "Track saved successfully!",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    } else {
-                        Toast.makeText(
-                            requireContext(),
-                            travelResponse.errorBody()?.string() ?: "Error",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
+                    null
+                } else {
+                    travelResponse.errorBody()?.string() ?: "Error"
                 }
             } catch (e: Exception) {
                 Log.d("API-ERROR", e.stackTraceToString())
+                "The track is saved, but its travel couldn't be."
+            }
+            withContext(Dispatchers.Main) {
+                done(null)
+                Toast.makeText(appContext, travelError ?: "Track saved successfully!", Toast.LENGTH_SHORT).show()
             }
         }
     }

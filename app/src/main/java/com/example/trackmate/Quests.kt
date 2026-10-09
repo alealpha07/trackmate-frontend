@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.fragment.app.Fragment
@@ -27,6 +28,7 @@ class QuestAdapter(
     inner class QuestViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val points: TextView = itemView.findViewById(R.id.points)
         val description: TextView = itemView.findViewById(R.id.description)
+        val imgVehicle: ImageView = itemView.findViewById(R.id.imgVehicle)
         val progressText: TextView = itemView.findViewById(R.id.progressText)
         val btnCollect: Button = itemView.findViewById(R.id.btnCollect)
     }
@@ -40,6 +42,7 @@ class QuestAdapter(
         val quest = quests[position]
         holder.points.text = quest.experience.toString()
         holder.description.text = quest.description
+        holder.imgVehicle.bindVehicle(Vehicle.fromId(quest.vehicle))
         holder.progressText.text = "${quest.progress} / ${quest.maxProgress}"
         holder.btnCollect.isEnabled = quest.progress >= quest.maxProgress
         holder.btnCollect.setOnClickListener {
