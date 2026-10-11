@@ -37,11 +37,6 @@ https://client.stadiamaps.com/signup/).
 Debug builds connect to the backend at `http://10.0.2.2:3000`, which is your computer's localhost as seen from the
 emulator.
 
-## Docker
-
-The app itself doesn't run in Docker. To run the backend with Docker, see the
-[backend README](https://github.com/alealpha07/trackmate-backend#docker).
-
 ## License
 
 MIT, see [LICENSE](LICENSE).
