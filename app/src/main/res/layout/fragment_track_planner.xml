@@ -18,6 +18,24 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
+        <!-- anchored views ignore margins, the padding keeps it off the sheet -->
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="8dp"
+            app:layout_anchor="@id/sheet"
+            app:layout_anchorGravity="top|start">
+
+            <include
+                android:id="@+id/mapCredit"
+                layout="@layout/view_map_credit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </FrameLayout>
+
         <LinearLayout
             android:id="@+id/mapControls"
             android:orientation="vertical"
@@ -325,15 +343,6 @@
                             android:text="@string/plan_navigate"
                             app:icon="@drawable/baseline_navigation_24_white"
                             app:iconGravity="textStart" />
-
-                        <!-- required by the copernicus licence -->
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:text="@string/plan_dem_attribution"
-                            android:textColor="?android:attr/textColorSecondary"
-                            android:textSize="10sp" />
 
                     </LinearLayout>
 

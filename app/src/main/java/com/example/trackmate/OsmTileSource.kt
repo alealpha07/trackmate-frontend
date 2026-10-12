@@ -1,9 +1,7 @@
 package com.example.trackmate
 
 import android.content.Context
-import android.graphics.Color
 import org.osmdroid.tileprovider.tilesource.XYTileSource
-import org.osmdroid.views.overlay.CopyrightOverlay
 
 enum class MapStyle(val id: String, val label: String, val urlSegment: String) {
     OUTDOORS("outdoors", "Outdoors", "outdoors"),
@@ -37,16 +35,3 @@ fun tileSourceFor(style: MapStyle): XYTileSource = XYTileSource(
 )
 
 const val OSM_ATTRIBUTION = "© Stadia Maps, © OpenMapTiles, © OpenStreetMap contributors"
-
-const val COPYRIGHT_START_OFFSET_DP = 8
-const val COPYRIGHT_BOTTOM_OFFSET_DP = 10
-const val COPYRIGHT_TEXT_ALPHA = 140
-
-fun buildCopyrightOverlay(context: Context): CopyrightOverlay {
-    val density = context.resources.displayMetrics.density
-    return CopyrightOverlay(context).apply {
-        setCopyrightNotice(OSM_ATTRIBUTION)
-        setTextColor(Color.argb(COPYRIGHT_TEXT_ALPHA, 0, 0, 0))
-        setOffset((COPYRIGHT_START_OFFSET_DP * density).toInt(), (COPYRIGHT_BOTTOM_OFFSET_DP * density).toInt())
-    }
-}

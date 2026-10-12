@@ -282,7 +282,7 @@ class TrackNavigation : Fragment() {
         mapView.controller.setZoom(DEFAULT_MAP_ZOOM)
         followZoom = FollowZoom(mapView)
 
-        mapView.overlays.add(buildCopyrightOverlay(requireContext()))
+        MapCredit(this, view.findViewById(R.id.mapCredit), mapView)
 
         myLocationOverlay = AnimatedMyLocationOverlay(GpsMyLocationProvider(requireContext()), mapView)
         applyPrimaryLocationIcons(requireContext(), myLocationOverlay)

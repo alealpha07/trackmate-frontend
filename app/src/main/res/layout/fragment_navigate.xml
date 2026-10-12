@@ -18,6 +18,20 @@
         app:layout_constraintEnd_toEndOf="parent" />
 
     <include
+        android:id="@+id/mapCredit"
+        layout="@layout/view_map_credit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
+        app:layout_constrainedWidth="true"
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <include
         android:id="@+id/rideStats"
         layout="@layout/view_ride_stats"
         android:layout_width="0dp"
@@ -126,10 +140,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Saved Tracks"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/mapCredit"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="4dp"
         app:icon="@drawable/baseline_menu_24"
         android:backgroundTint="@color/cardview_light_background"
         style="?attr/materialButtonOutlinedStyle"/>

@@ -331,7 +331,7 @@ class TravelGraph : Fragment() {
         val mapStyle = getSavedMapStyle(requireContext())
         mapView.setTileSource(tileSourceFor(mapStyle))
         mapView.zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
-        mapView.overlays.add(buildCopyrightOverlay(requireContext()))
+        MapCredit(this, binding.mapCredit.root, mapView)
         setSpeedMapInteractive(false)
 
         binding.speedLegendBar.background = GradientDrawable(

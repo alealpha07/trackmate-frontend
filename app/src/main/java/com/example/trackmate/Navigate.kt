@@ -253,7 +253,7 @@ class Navigate : Fragment() {
         mapView.setMultiTouchControls(true)
         mapView.controller.setZoom(DEFAULT_MAP_ZOOM)
 
-        mapView.overlays.add(buildCopyrightOverlay(requireContext()))
+        MapCredit(this, view.findViewById(R.id.mapCredit), mapView)
 
         myLocationOverlay = AnimatedMyLocationOverlay(GpsMyLocationProvider(requireContext()), mapView)
         applyPrimaryLocationIcons(requireContext(), myLocationOverlay)

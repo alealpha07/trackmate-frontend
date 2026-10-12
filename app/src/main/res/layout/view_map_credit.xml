@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- the "i" comes first so a long credit wraps instead of pushing it off screen -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingEnd="8dp"
+    android:background="@drawable/bg_map_credit"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <ImageButton
+        android:id="@+id/btnMapCreditInfo"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:padding="4dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_info_24"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/map_credit_info"
+        android:tint="#6b6e73" />
+
+    <TextView
+        android:id="@+id/txtMapCredit"
+        android:text="@string/map_credit_full"
+        android:textColor="#4a4d52"
+        android:textSize="11sp"
+        android:paddingVertical="3dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+</LinearLayout>

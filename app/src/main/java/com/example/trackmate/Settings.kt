@@ -24,6 +24,10 @@ class Settings : Fragment() {
         val view = inflater.inflate(R.layout.fragment_settings, container, false)
         val btnLogout = view.findViewById<Button>(R.id.btnLogout)
 
+        view.findViewById<Button>(R.id.btnCredits).setOnClickListener {
+            findNavController().navigate(R.id.credits)
+        }
+
         btnLogout.setOnClickListener {
             apiCallCoroutine.launch {
                 try {

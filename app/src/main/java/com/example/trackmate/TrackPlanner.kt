@@ -257,7 +257,7 @@ class TrackPlanner : Fragment() {
         myLocationOverlay = AnimatedMyLocationOverlay(GpsMyLocationProvider(context), mapView)
         applyPrimaryLocationIcons(context, myLocationOverlay)
         mapView.overlays.add(myLocationOverlay)
-        mapView.overlays.add(buildCopyrightOverlay(context))
+        MapCredit(this, view.findViewById(R.id.mapCredit), mapView)
 
         setupMapControls(
             fragment = this,
@@ -521,6 +521,8 @@ class TrackPlanner : Fragment() {
         row.element = element
         row.field = element.findViewById(R.id.pointField)
         row.input = element.findViewById(R.id.pointInput)
+        // every row shares the id, so a restored state would put the last row's text in all of them
+        row.input.isSaveEnabled = false
         row.pin = element.findViewById(R.id.pin)
         row.name = element.findViewById(R.id.pointName)
         row.search = PlaceSearch(row)

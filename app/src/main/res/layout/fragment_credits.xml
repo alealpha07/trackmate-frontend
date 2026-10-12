@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="50dp"
+    tools:context=".Credits">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="24dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            style="@style/CreditsHeading"
+            android:text="@string/credits_map" />
+
+        <TextView
+            style="@style/CreditsBody"
+            android:text="@string/credits_map_body" />
+
+        <TextView
+            style="@style/CreditsBody"
+            android:text="@string/credits_map_error" />
+
+        <TextView
+            style="@style/CreditsHeading"
+            android:text="@string/credits_routing" />
+
+        <TextView
+            style="@style/CreditsBody"
+            android:text="@string/credits_routing_body" />
+
+        <TextView
+            style="@style/CreditsHeading"
+            android:text="@string/credits_elevation" />
+
+        <TextView
+            style="@style/CreditsBody"
+            android:text="@string/credits_elevation_body" />
+
+        <TextView
+            style="@style/CreditsHeading"
+            android:text="@string/credits_contact" />
+
+        <TextView
+            style="@style/CreditsBody"
+            android:text="@string/credits_contact_body" />
+    </LinearLayout>
+</ScrollView>

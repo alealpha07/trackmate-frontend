@@ -7,6 +7,19 @@
     tools:context=".Settings"
     android:paddingBottom="50dp">
 
+    <Button
+        android:id="@+id/btnCredits"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="16dp"
+        android:gravity="start|center_vertical"
+        android:text="@string/credits_open"
+        app:icon="@drawable/ic_info_24"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        style="@style/Widget.MaterialComponents.Button.TextButton" />
 
     <Button
         android:id="@+id/btnLogout"
