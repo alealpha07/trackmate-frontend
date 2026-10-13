@@ -102,7 +102,7 @@ class LoginRegister : Fragment() {
         }
     }
 
-    private fun loginUser(username: String, password: String) {
+    private fun loginUser(username: String, password: String, justRegistered: Boolean = false) {
         apiCallCoroutine.launch {
             try {
                 val response: Response<ResponseBody> = api.login(
@@ -115,11 +115,15 @@ class LoginRegister : Fragment() {
                     }
                 } else {
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(
-                            requireContext(),
-                            response.body()?.string() ?: response.message(), Toast.LENGTH_SHORT
-                        ).show()
-                        goToHome()
+                        if (justRegistered) {
+                            goToProfileEdit()
+                        } else {
+                            Toast.makeText(
+                                requireContext(),
+                                response.body()?.string() ?: response.message(), Toast.LENGTH_SHORT
+                            ).show()
+                            goToHome()
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -145,8 +149,10 @@ class LoginRegister : Fragment() {
                             requireContext(),
                             response.body()?.string() ?: response.message(), Toast.LENGTH_SHORT
                         ).show()
-                        isRegisterMode = !isRegisterMode
+                        // if the login fails the form is already in login mode
+                        isRegisterMode = false
                         updateUIForMode()
+                        loginUser(username, password, justRegistered = true)
                     }
                 }
             }
@@ -164,5 +170,11 @@ class LoginRegister : Fragment() {
                 .setPopUpTo(R.id.loginRegister, true)
                 .build()
         )
+    }
+
+    // home stays below, so saving or going back lands there
+    private fun goToProfileEdit() {
+        goToHome()
+        findNavController().navigate(R.id.profileEdit)
     }
 }
