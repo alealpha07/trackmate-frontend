@@ -57,13 +57,13 @@
         </activity>
 
         <service
-            android:name=".services.TrackRecordingService"
+            android:name=".navigate.TrackRecordingService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="location" />
 
         <service
-            android:name=".services.TrackNavigationService"
+            android:name=".track.TrackNavigationService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="location" />

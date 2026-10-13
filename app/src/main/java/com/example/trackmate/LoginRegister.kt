@@ -9,9 +9,10 @@ import androidx.constraintlayout.widget.Group
 import androidx.fragment.app.Fragment
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
-import com.example.trackmate.services.LoginRequest
-import com.example.trackmate.services.RegisterRequest
-import com.example.trackmate.services.UserResponse
+import com.example.trackmate.api.AuthService
+import com.example.trackmate.api.LoginRequest
+import com.example.trackmate.api.RegisterRequest
+import com.example.trackmate.api.UserResponse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -19,7 +20,6 @@ import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import retrofit2.Response
 import android.util.Log
-import com.example.trackmate.services.AuthService
 
 class LoginRegister : Fragment() {
 

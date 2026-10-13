@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:paddingBottom="56dp"
-    tools:context=".TrackPlanner">
+    tools:context=".planner.TrackPlanner">
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:id="@+id/plannerRoot"

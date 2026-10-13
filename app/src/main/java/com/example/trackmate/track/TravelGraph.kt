@@ -1,0 +1,676 @@
+package com.example.trackmate.track
+
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
+import android.os.Bundle
+import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.FrameLayout
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.activity.OnBackPressedCallback
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.doOnNextLayout
+import androidx.core.view.isVisible
+import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.navArgs
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
+import androidx.recyclerview.widget.RecyclerView
+import com.example.trackmate.MainActivity
+import com.example.trackmate.R
+import com.example.trackmate.api.AuthService
+import com.example.trackmate.api.LeaderboardItem
+import com.example.trackmate.api.Track
+import com.example.trackmate.api.TrackDetails
+import com.example.trackmate.api.TrackPoint
+import com.example.trackmate.api.TrackService
+import com.example.trackmate.api.TravelItem
+import com.example.trackmate.databinding.FragmentTravelGraphBinding
+import com.example.trackmate.map.MapCredit
+import com.example.trackmate.map.createLetterMarkerIcon
+import com.example.trackmate.map.getSavedMapStyle
+import com.example.trackmate.map.tileSourceFor
+import com.example.trackmate.util.Vehicle
+import com.example.trackmate.util.bindVehicleChips
+import com.example.trackmate.util.formatTime
+import com.example.trackmate.util.loadProfileImage
+import com.example.trackmate.util.showTrackVehicle
+import com.google.android.material.chip.ChipGroup
+import com.github.mikephil.charting.charts.BarChart
+import com.github.mikephil.charting.charts.HorizontalBarChart
+import com.github.mikephil.charting.charts.LineChart
+import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.data.*
+import com.github.mikephil.charting.utils.ColorTemplate
+import com.squareup.moshi.Moshi
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.osmdroid.util.BoundingBox
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.CustomZoomButtonsController
+import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.Overlay
+import org.osmdroid.views.overlay.Polyline
+import java.text.SimpleDateFormat
+import java.util.Locale
+import kotlin.math.roundToInt
+
+class LeaderboardAdapter :
+    ListAdapter<LeaderboardItem, LeaderboardAdapter.ViewHolder>(DiffCallback) {
+
+    object DiffCallback : DiffUtil.ItemCallback<LeaderboardItem>() {
+        override fun areItemsTheSame(old: LeaderboardItem, new: LeaderboardItem) =
+            old.userId == new.userId
+
+        override fun areContentsTheSame(old: LeaderboardItem, new: LeaderboardItem) = old == new
+    }
+
+    class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val userImage: ImageView = view.findViewById(R.id.userImage)
+        val usernameText: TextView = view.findViewById(R.id.usernameText)
+        val timeText: TextView = view.findViewById(R.id.timeText)
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_user_leaderboard, parent, false)
+        return ViewHolder(view)
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val item = getItem(position)
+        holder.usernameText.text = item.name
+        holder.timeText.text = formatTime(item.time)
+        (holder.userImage.context as? MainActivity)?.let { activity ->
+            holder.userImage.loadProfileImage(item.userId, activity)
+        }
+    }
+}
+
+class TravelGraph : Fragment() {
+    private lateinit var api: TrackService
+    private lateinit var authApi: AuthService
+    private lateinit var leaderboardAdapter: LeaderboardAdapter
+    private lateinit var leaderboardRecycler: RecyclerView
+    private var _binding: FragmentTravelGraphBinding? = null
+    private val binding get() = _binding!!
+    private val apiCallCoroutine = CoroutineScope(Dispatchers.IO)
+    private val args: TravelGraphArgs by navArgs()
+
+    private var trackTravels: List<TravelItem>? = null
+    private var currentUserId: Int? = null
+    private var ownerId: Int? = null
+    private var selectedVehicle: Vehicle? = null
+    private var allTravels: List<TravelItem> = emptyList()
+    private var filterUserIds: List<Int> = emptyList()
+    private var selectedUserId: Int? = null
+    private var travelsForMap: List<TravelItem> = emptyList()
+    private var requestedSpeedMapTravelId: Int? = null
+    private val speedMapOverlays = mutableListOf<Overlay>()
+    private var speedMapBounds: BoundingBox? = null
+    private var isSpeedMapFullscreen = false
+    private val exitFullscreenOnBack = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() = exitSpeedMapFullscreen()
+    }
+
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = FragmentTravelGraphBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        api = (requireActivity() as MainActivity).trackService
+        authApi = (requireActivity() as MainActivity).authService
+        leaderboardRecycler = binding.leaderboardRecycler
+        leaderboardRecycler.layoutManager = LinearLayoutManager(requireContext())
+        leaderboardAdapter = LeaderboardAdapter()
+        leaderboardRecycler.adapter = leaderboardAdapter
+        initSpeedMapView()
+
+        loadTrackData()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        binding.speedMapView.onResume()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        binding.speedMapView.onPause()
+    }
+
+    private fun showTrackDetails(trackDetails: TrackDetails) {
+        binding.txtTrackName.text = trackDetails.name
+        binding.txtTrackVehicle.showTrackVehicle(Vehicle.fromId(trackDetails.vehicle))
+
+        val trackLength = trackDetails.overallBest?.distance
+        binding.txtTrackLength.text = if (trackLength != null) {
+            "Length: ${"%.2f".format(trackLength)} km"
+        } else {
+            "Length: N/A"
+        }
+
+        binding.txtUserTravelCount.text =
+            "Your Travels: ${trackDetails.travelCount}"
+    }
+
+    private val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.ITALIAN)
+
+    private fun loadTrackData() {
+        apiCallCoroutine.launch {
+            try {
+                // details carry the owner id and the track's vehicle
+                val trackResponse = api.getTrack(args.trackId)
+                val trackDetails = trackResponse.body().takeIf { trackResponse.isSuccessful }
+
+                val response = api.getTravelsByTrack(args.trackId)
+                val travels = response.body().takeIf { response.isSuccessful }
+                val userResponse = if (travels != null) authApi.getUser() else null
+                val userId = userResponse?.body()?.takeIf { userResponse.isSuccessful }?.id
+                withContext(Dispatchers.Main) {
+                    if (_binding == null) return@withContext
+                    ownerId = trackDetails?.ownerId
+                    if (travels != null && userId != null) {
+                        trackTravels = travels
+                        currentUserId = userId
+                    }
+                    val vehicle = Vehicle.fromId(trackDetails?.vehicle)
+                    if (vehicle != null) {
+                        binding.root.findViewById<ChipGroup>(R.id.vehicleChips).bindVehicleChips(vehicle, ::showVehicle)
+                    } else {
+                        showVehicle(null)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("API-ERROR", e.stackTraceToString())
+            }
+        }
+    }
+
+    private fun showVehicle(vehicle: Vehicle?) {
+        selectedVehicle = vehicle
+        loadDetails(vehicle)
+        loadLeaderboard(vehicle)
+        val travels = trackTravels ?: return
+        val userId = currentUserId ?: return
+        val shown = if (vehicle == null) travels else travels.filter { it.vehicle == vehicle.id }
+        setupSpeedComparisonBarChart(binding.barChart, shown, userId)
+        setupUserFilter(shown, userId, ownerId)
+    }
+
+    private fun loadDetails(vehicle: Vehicle?) {
+        apiCallCoroutine.launch {
+            try {
+                val response = api.getTrack(args.trackId, vehicle?.id)
+                val details = response.body().takeIf { response.isSuccessful } ?: return@launch
+                withContext(Dispatchers.Main) {
+                    if (_binding != null && vehicle == selectedVehicle) showTrackDetails(details)
+                }
+            } catch (e: Exception) {
+                Log.e("API-ERROR", e.stackTraceToString())
+            }
+        }
+    }
+
+    private fun setupUserFilter(travels: List<TravelItem>, currentUserId: Int, ownerId: Int?) {
+        allTravels = travels
+
+        val usernames = travels.associate { it.userId to (it.username ?: "User #${it.userId}") }
+        val userIds = usernames.keys.sortedWith(
+            compareBy<Int>({ it != ownerId }, { it != currentUserId }, { usernames[it]!!.lowercase() })
+        )
+        filterUserIds = userIds
+
+        binding.titleUserFilter.isVisible = userIds.isNotEmpty()
+        binding.spinnerUsers.isVisible = userIds.isNotEmpty()
+        if (userIds.isEmpty()) {
+            showDataForUser(null, force = true)
+            return
+        }
+
+        val labels = userIds.map { id ->
+            val tags = listOfNotNull(
+                "owner".takeIf { id == ownerId },
+                "you".takeIf { id == currentUserId }
+            )
+            if (tags.isEmpty()) usernames[id]!! else "${usernames[id]} (${tags.joinToString(", ")})"
+        }
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, labels)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.spinnerUsers.adapter = adapter
+        binding.spinnerUsers.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                showDataForUser(filterUserIds[position])
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        showDataForUser(userIds[0], force = true)
+    }
+
+    private fun showDataForUser(userId: Int?, force: Boolean = false) {
+        if (!force && userId != null && userId == selectedUserId) return
+        selectedUserId = userId
+
+        val userTravels = allTravels.filter { it.userId == userId }
+        setupTimeLineChart(binding.performanceChart, userTravels.sortedBy { travel ->
+            formatter.parse(travel.dateTimeString)
+        })
+        setupSpeedMap(userTravels)
+    }
+
+    private fun setupSpeedComparisonBarChart(chart: BarChart, travels: List<TravelItem>, userId: Int) {
+        if (travels.isEmpty()) {
+            chart.clear()
+            return
+        }
+
+        val userTravels = travels.filter { it.userId == userId }
+        val otherTravels = travels.filter { it.userId != userId }
+
+        val myBestMaxSpeed = userTravels.maxOfOrNull { it.maxSpeed } ?: 0f
+        val globalMaxSpeed = travels.maxOfOrNull { it.maxSpeed } ?: 0f
+
+        val myBestAvgSpeed = userTravels.maxOfOrNull { it.averageSpeed } ?: 0f
+        val globalBestAvgSpeed = travels.maxOfOrNull { it.averageSpeed } ?: 0f
+
+        val entries = listOf(
+            BarEntry(0f, myBestMaxSpeed),
+            BarEntry(1f, globalMaxSpeed),
+            BarEntry(2f, myBestAvgSpeed),
+            BarEntry(3f, globalBestAvgSpeed)
+        )
+
+        val labels = listOf(
+            "My Max Speed",
+            "Global Max Speed",
+            "My Avg Speed",
+            "Global Avg Speed"
+        )
+
+        val dataSet = BarDataSet(entries, "Speed Comparison").apply {
+            colors = ColorTemplate.MATERIAL_COLORS.toList()
+            valueTextColor = Color.BLACK
+            valueTextSize = 14f
+        }
+
+        chart.data = BarData(dataSet)
+
+        chart.xAxis.apply {
+            position = XAxis.XAxisPosition.BOTTOM
+            setDrawGridLines(false)
+            granularity = 1f
+            textSize = 12f
+            labelRotationAngle = -20f
+            valueFormatter = object : com.github.mikephil.charting.formatter.ValueFormatter() {
+                override fun getFormattedValue(value: Float): String {
+                    val index = value.toInt()
+                    return labels.getOrNull(index) ?: ""
+                }
+            }
+        }
+
+        chart.axisLeft.apply {
+            textSize = 12f
+            valueFormatter = object : com.github.mikephil.charting.formatter.ValueFormatter() {
+                override fun getFormattedValue(value: Float): String {
+                    return "${value.toInt()} km/h"
+                }
+            }
+        }
+
+        chart.axisRight.isEnabled = false
+        chart.description.isEnabled = false
+        chart.legend.isEnabled = false
+        chart.extraBottomOffset = 40f
+
+        chart.animateY(1000)
+        chart.invalidate()
+    }
+
+    private fun initSpeedMapView() {
+        val mapView = binding.speedMapView
+        mapView.setDestroyMode(false)
+        val mapStyle = getSavedMapStyle(requireContext())
+        mapView.setTileSource(tileSourceFor(mapStyle))
+        mapView.zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
+        MapCredit(this, binding.mapCredit.root, mapView)
+        setSpeedMapInteractive(false)
+
+        binding.speedLegendBar.background = GradientDrawable(
+            GradientDrawable.Orientation.LEFT_RIGHT,
+            speedColorStops
+        ).apply {
+            cornerRadius = resources.displayMetrics.density * 7f
+        }
+
+        binding.btnSpeedMapFullscreen.setOnClickListener {
+            if (isSpeedMapFullscreen) exitSpeedMapFullscreen() else enterSpeedMapFullscreen()
+        }
+        binding.btnSpeedMapZoomIn.setOnClickListener { mapView.controller.zoomIn() }
+        binding.btnSpeedMapZoomOut.setOnClickListener { mapView.controller.zoomOut() }
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, exitFullscreenOnBack)
+    }
+
+    private fun setSpeedMapInteractive(enabled: Boolean) {
+        val mapView = binding.speedMapView
+        mapView.setMultiTouchControls(enabled)
+        mapView.setOnTouchListener(if (enabled) null else View.OnTouchListener { _, _ -> true })
+        binding.btnSpeedMapZoomIn.isVisible = enabled
+        binding.btnSpeedMapZoomOut.isVisible = enabled
+    }
+
+    private fun enterSpeedMapFullscreen() {
+        if (isSpeedMapFullscreen) return
+        isSpeedMapFullscreen = true
+
+        val section = binding.speedMapSection
+        // keep the slot height so the page doesn't jump
+        binding.speedMapSlot.minimumHeight = binding.speedMapSlot.height
+        binding.speedMapSlot.removeView(section)
+        binding.fullscreenContainer.addView(
+            section,
+            FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        )
+        binding.speedMapFrame.layoutParams = (binding.speedMapFrame.layoutParams as LinearLayout.LayoutParams).apply {
+            height = 0
+            weight = 1f
+        }
+        binding.speedMapFrame.isVisible = true
+        binding.fullscreenContainer.isVisible = true
+
+        setSystemChromeVisible(false)
+        setSpeedMapInteractive(true)
+        binding.btnSpeedMapFullscreen.setImageResource(R.drawable.ic_fullscreen_exit_24)
+        binding.btnSpeedMapFullscreen.contentDescription = "Exit fullscreen"
+        exitFullscreenOnBack.isEnabled = true
+        binding.speedMapView.doOnNextLayout { fitSpeedMapToTrack() }
+    }
+
+    private fun exitSpeedMapFullscreen() {
+        if (!isSpeedMapFullscreen) return
+        isSpeedMapFullscreen = false
+
+        val section = binding.speedMapSection
+        binding.fullscreenContainer.removeView(section)
+        binding.fullscreenContainer.isVisible = false
+        binding.speedMapSlot.addView(
+            section,
+            FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        )
+        binding.speedMapSlot.minimumHeight = 0
+        binding.speedMapFrame.layoutParams = (binding.speedMapFrame.layoutParams as LinearLayout.LayoutParams).apply {
+            height = (220 * resources.displayMetrics.density).roundToInt()
+            weight = 0f
+        }
+        binding.speedMapFrame.isVisible = speedMapBounds != null
+
+        setSystemChromeVisible(true)
+        setSpeedMapInteractive(false)
+        binding.btnSpeedMapFullscreen.setImageResource(R.drawable.ic_fullscreen_24)
+        binding.btnSpeedMapFullscreen.contentDescription = "Open fullscreen"
+        exitFullscreenOnBack.isEnabled = false
+        binding.speedMapView.doOnNextLayout { fitSpeedMapToTrack() }
+    }
+
+    private fun setSystemChromeVisible(visible: Boolean) {
+        val activity = requireActivity() as AppCompatActivity
+        activity.supportActionBar?.let { if (visible) it.show() else it.hide() }
+        activity.findViewById<View>(R.id.nav_view)?.isVisible = visible
+    }
+
+    private fun fitSpeedMapToTrack() {
+        val bounds = speedMapBounds ?: return
+        binding.speedMapView.zoomToBoundingBox(bounds, false, 60)
+        binding.speedMapView.invalidate()
+    }
+
+    private fun setupSpeedMap(userTravels: List<TravelItem>) {
+        travelsForMap = userTravels.sortedByDescending { formatter.parse(it.dateTimeString) }
+
+        if (travelsForMap.isEmpty()) {
+            requestedSpeedMapTravelId = null
+            binding.spinnerTravels.adapter = null
+            renderSpeedMap(emptyList())
+            return
+        }
+
+        val labels = travelsForMap.map { "${it.dateTimeString} - ${formatTime(it.time)}" }
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, labels)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.spinnerTravels.adapter = adapter
+        binding.spinnerTravels.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                loadSpeedMapForTravel(travelsForMap[position].id)
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        loadSpeedMapForTravel(travelsForMap[0].id)
+    }
+
+    private fun loadSpeedMapForTravel(travelId: Int) {
+        if (travelId == requestedSpeedMapTravelId) return
+        requestedSpeedMapTravelId = travelId
+        apiCallCoroutine.launch {
+            val points = try {
+                val fileResponse = api.getTravelFile(travelId)
+                if (fileResponse.isSuccessful && fileResponse.body() != null) {
+                    val json = fileResponse.body()!!.string()
+                    val moshi = Moshi.Builder().build()
+                    moshi.adapter(Track::class.java).fromJson(json)?.track ?: emptyList()
+                } else {
+                    emptyList()
+                }
+            } catch (e: Exception) {
+                Log.e("API-ERROR", e.stackTraceToString())
+                emptyList()
+            }
+
+            withContext(Dispatchers.Main) {
+                if (travelId == requestedSpeedMapTravelId) renderSpeedMap(points)
+            }
+        }
+    }
+
+    private fun renderSpeedMap(points: List<TrackPoint>) {
+        val mapView = binding.speedMapView
+        speedMapOverlays.forEach { mapView.overlays.remove(it) }
+        speedMapOverlays.clear()
+
+        val hasTrack = points.size >= 2
+        // in fullscreen the exit button must stay reachable
+        binding.speedMapFrame.isVisible = hasTrack || isSpeedMapFullscreen
+        mapView.isVisible = hasTrack
+        binding.speedLegendBar.isVisible = hasTrack
+        binding.txtSpeedMin.isVisible = hasTrack
+        binding.txtSpeedMark1.isVisible = hasTrack
+        binding.txtSpeedMark2.isVisible = hasTrack
+        binding.txtSpeedMax.isVisible = hasTrack
+
+        if (!hasTrack) {
+            speedMapBounds = null
+            return
+        }
+
+        val minSpeed = points.minOf { it.speed }
+        val maxSpeed = points.maxOf { it.speed }
+        val range = (maxSpeed - minSpeed).takeIf { it > 0f } ?: 1f
+        val geoPoints = points.map { GeoPoint(it.latitude, it.longitude) }
+
+        for (i in 0 until points.size - 1) {
+            val t = (points[i].speed - minSpeed) / range
+            val segment = Polyline().apply {
+                setPoints(listOf(geoPoints[i], geoPoints[i + 1]))
+                outlinePaint.color = speedToColor(t)
+                outlinePaint.strokeWidth = 10f
+            }
+            mapView.overlays.add(segment)
+            speedMapOverlays.add(segment)
+        }
+
+        val endpointColor = Color.parseColor("#424242")
+        listOf('A' to geoPoints.first(), 'B' to geoPoints.last()).forEach { (letter, point) ->
+            val marker = Marker(mapView).apply {
+                position = point
+                title = if (letter == 'A') "Start" else "Finish"
+                icon = createLetterMarkerIcon(requireContext(), letter, fillColor = endpointColor)
+                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+            }
+            mapView.overlays.add(marker)
+            speedMapOverlays.add(marker)
+        }
+
+        speedMapBounds = BoundingBox.fromGeoPoints(geoPoints)
+        fitSpeedMapToTrack()
+
+        binding.txtSpeedMin.text = "${minSpeed.roundToInt()} km/h"
+        binding.txtSpeedMark1.text = "${(minSpeed + range / 3f).roundToInt()} km/h"
+        binding.txtSpeedMark2.text = "${(minSpeed + range * 2f / 3f).roundToInt()} km/h"
+        binding.txtSpeedMax.text = "${maxSpeed.roundToInt()} km/h"
+    }
+
+    private val speedColorStops = intArrayOf(
+        Color.parseColor("#000000"), // black: slowest
+        Color.parseColor("#2196F3"), // blue
+        Color.parseColor("#4CAF50"), // green
+        Color.parseColor("#F44336")  // red: fastest
+    )
+
+    private fun speedToColor(t: Float): Int {
+        val segmentCount = speedColorStops.size - 1
+        val scaled = t.coerceIn(0f, 1f) * segmentCount
+        val index = scaled.toInt().coerceIn(0, segmentCount - 1)
+        val localT = scaled - index
+        val startColor = speedColorStops[index]
+        val endColor = speedColorStops[index + 1]
+        val r = Color.red(startColor) + ((Color.red(endColor) - Color.red(startColor)) * localT).roundToInt()
+        val g = Color.green(startColor) + ((Color.green(endColor) - Color.green(startColor)) * localT).roundToInt()
+        val b = Color.blue(startColor) + ((Color.blue(endColor) - Color.blue(startColor)) * localT).roundToInt()
+        return Color.rgb(r, g, b)
+    }
+
+    private fun loadLeaderboard(vehicle: Vehicle?) {
+        apiCallCoroutine.launch {
+            try {
+                val response = api.getLeaderboard(args.trackId, vehicle?.id)
+                if (response.isSuccessful && response.body() != null) {
+                    val leaderboard = response.body()!!
+                    withContext(Dispatchers.Main) {
+                        if (_binding != null && vehicle == selectedVehicle) leaderboardAdapter.submitList(leaderboard)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("API-ERROR", e.stackTraceToString())
+            }
+        }
+    }
+
+    private fun setupTimeLineChart(chart: LineChart, travels: List<TravelItem>) {
+        if (travels.isEmpty()) {
+            chart.clear()
+            return
+        }
+
+        val entries = travels.mapIndexed { index, travel ->
+            Entry(index.toFloat(), travel.time)
+        }
+
+        val dataSet = LineDataSet(entries, "Time").apply {
+            color = Color.BLUE
+            setCircleColor(Color.BLUE)
+            lineWidth = 2f
+            circleRadius = 6f
+            valueTextSize = 14f
+            valueTextColor = Color.BLACK
+            setDrawFilled(true)
+            fillColor = Color.BLUE
+            fillAlpha = 50
+            setDrawValues(true)
+            valueFormatter = object : com.github.mikephil.charting.formatter.ValueFormatter() {
+                override fun getFormattedValue(value: Float): String {
+                    val totalSeconds = value.toInt()
+                    val hours = totalSeconds / 3600
+                    val minutes = (totalSeconds % 3600) / 60
+                    val seconds = totalSeconds % 60
+                    return "%02d:%02d:%02d".format(hours, minutes, seconds)
+                }
+            }
+        }
+
+        chart.data = LineData(dataSet)
+
+        chart.xAxis.apply {
+            position = XAxis.XAxisPosition.BOTTOM
+            setDrawGridLines(false)
+            granularity = 1f
+            textSize = 14f
+            valueFormatter = object : com.github.mikephil.charting.formatter.ValueFormatter() {
+                override fun getFormattedValue(value: Float): String {
+                    val index = value.toInt()
+                    return if (index in travels.indices) {
+                        travels[index].dateTimeString.substringAfter(" ")
+                    } else ""
+                }
+            }
+        }
+
+        chart.axisLeft.apply {
+            granularity = 1f
+            textSize = 14f
+            valueFormatter = object : com.github.mikephil.charting.formatter.ValueFormatter() {
+                override fun getFormattedValue(value: Float): String {
+                    val totalSeconds = value.toInt()
+                    val hours = totalSeconds / 3600
+                    val minutes = (totalSeconds % 3600) / 60
+                    val seconds = totalSeconds % 60
+                    return "%02d:%02d:%02d".format(hours, minutes, seconds)
+                }
+            }
+        }
+
+        chart.axisRight.isEnabled = false
+
+        chart.legend.apply {
+            isEnabled = true
+            textSize = 14f
+            verticalAlignment =
+                com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
+            horizontalAlignment =
+                com.github.mikephil.charting.components.Legend.LegendHorizontalAlignment.LEFT
+            orientation =
+                com.github.mikephil.charting.components.Legend.LegendOrientation.HORIZONTAL
+            setDrawInside(false)
+        }
+
+        chart.extraBottomOffset = 30f
+        chart.extraRightOffset = 35f
+        chart.description.isEnabled = false
+        chart.animateY(1000)
+        chart.invalidate()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        if (isSpeedMapFullscreen) {
+            isSpeedMapFullscreen = false
+            setSystemChromeVisible(true)
+        }
+        binding.speedMapView.onDetach()
+        _binding = null
+    }
+}
