@@ -93,6 +93,14 @@
     <string name="navigate_by">Navigate by</string>
     <string name="navigate_start">Start</string>
     <string name="navigate_vehicle_missing">Add %1$s to your vehicles to navigate this track</string>
+    <!-- Navigation banner -->
+    <string name="navigate_distance_km">%1$.1f km</string>
+    <string name="navigate_distance_m">%1$d m</string>
+    <string name="directions_loading">Loading directions...</string>
+    <string name="directions_unavailable">Directions unavailable - tap to retry</string>
+    <string name="directions_back_to_track">Back to the track</string>
+    <string name="directions_then">Then</string>
+    <string name="speed_limit_description">Speed limit %1$d km/h</string>
     <!-- Ride stats -->
     <string name="ride_stats_km">km</string>
     <string name="ride_stats_time">time</string>

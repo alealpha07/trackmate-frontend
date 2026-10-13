@@ -1,16 +1,37 @@
 package com.example.trackmate
 
+import android.graphics.Color
 import android.view.View
 import android.widget.TextView
+import com.example.trackmate.services.isOverLimit
 import kotlin.math.roundToInt
+
+private val SPEED_COLOR = Color.parseColor("#2b2d30")
+private val OVER_LIMIT_COLOR = Color.parseColor("#D32F2F")
 
 class RideStatsCard(view: View) {
     private val txtDistance: TextView = view.findViewById(R.id.txtStatsDistance)
     private val txtTime: TextView = view.findViewById(R.id.txtStatsTime)
     private val txtSpeed: TextView = view.findViewById(R.id.txtStatsSpeed)
+    private val txtSpeedLimit: TextView = view.findViewById(R.id.txtSpeedLimit)
+    private var speedLimitKmh: Int? = null
+    private var speedKmh = 0f
 
     fun showSpeed(speedKmh: Float) {
+        this.speedKmh = speedKmh
         txtSpeed.text = speedKmh.roundToInt().toString()
+        txtSpeed.setTextColor(if (isOverLimit(speedKmh, speedLimitKmh)) OVER_LIMIT_COLOR else SPEED_COLOR)
+    }
+
+    fun showSpeedLimit(kmh: Int?) {
+        if (kmh == speedLimitKmh) return
+        speedLimitKmh = kmh
+        txtSpeedLimit.visibility = if (kmh == null) View.GONE else View.VISIBLE
+        if (kmh != null) {
+            txtSpeedLimit.text = kmh.toString()
+            txtSpeedLimit.contentDescription = txtSpeedLimit.context.getString(R.string.speed_limit_description, kmh)
+        }
+        showSpeed(speedKmh)
     }
 
     fun show(distanceKm: Float, durationMs: Long, speedKmh: Float) {
@@ -19,5 +40,8 @@ class RideStatsCard(view: View) {
         showSpeed(speedKmh)
     }
 
-    fun reset() = show(0f, 0L, 0f)
+    fun reset() {
+        showSpeedLimit(null)
+        show(0f, 0L, 0f)
+    }
 }

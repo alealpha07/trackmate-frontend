@@ -11,6 +11,7 @@ import android.widget.*
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.fragment.navArgs
 import com.example.trackmate.services.*
@@ -54,6 +55,7 @@ class TrackNavigation : Fragment() {
     private lateinit var txtUserBestSpd: TextView
     private lateinit var statsLayout: LinearLayout
     private lateinit var rideStats: RideStatsCard
+    private lateinit var banner: NavigationBanner
     private lateinit var btnMoreDetails: Button
     private lateinit var txtVehicleMissing: TextView
     private var trackVehicle: Vehicle? = null
@@ -66,8 +68,13 @@ class TrackNavigation : Fragment() {
     private val pathPoints = mutableListOf<GeoPoint>()
     private val referencePoints = mutableListOf<GeoPoint>()
 
-    private var offTrackDialog: AlertDialog? = null
-    private var offTrackShown = false
+    private var instructions: TrackInstructions? = null
+    private var instructionsLoading = false
+    private var instructionsJob: Job? = null
+    private var lastAlong = 0.0
+    private var lastOffTrack = false
+    private var lastDistanceToTrack = 0.0
+    private var lastSpeed = 0f
     private var navigationFinishHandled = false
     private var userIsInteracting = false
     private var needsBearingSnap = false
@@ -80,6 +87,7 @@ class TrackNavigation : Fragment() {
     private lateinit var api: TrackService
     private lateinit var questApi: QuestService
     private lateinit var profileApi: ProfileService
+    private lateinit var instructionsApi: InstructionsService
     private val args: TrackNavigationArgs by navArgs()
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -163,6 +171,13 @@ class TrackNavigation : Fragment() {
 
             followZoom.onSpeed(speed)
             rideStats.show(distance, duration, speed)
+            if (intent.hasExtra("along")) {
+                lastAlong = intent.getFloatExtra("along", 0f).toDouble()
+                lastOffTrack = offTrack
+                lastDistanceToTrack = intent.getFloatExtra("distanceToTrack", 0f).toDouble()
+            }
+            lastSpeed = speed
+            if (isNavigatingUiActive) showDirections()
 
             if (!lat.isNaN() && !lng.isNaN()) {
                 val newPoint = GeoPoint(lat, lng)
@@ -184,14 +199,6 @@ class TrackNavigation : Fragment() {
                 mapView.invalidate()
             }
 
-            if (offTrack && !offTrackShown) {
-                offTrackShown = true
-                showOffTrackDialog()
-            } else if (!offTrack && offTrackShown) {
-                offTrackShown = false
-                dismissOffTrackDialog()
-            }
-
             if (isFinished && !navigationFinishHandled) {
                 navigationFinishHandled = true
                 stopNavigation(true)
@@ -199,20 +206,43 @@ class TrackNavigation : Fragment() {
         }
     }
 
-    private fun showOffTrackDialog() {
-        if (offTrackDialog?.isShowing == true) return
-        offTrackDialog = AlertDialog.Builder(requireContext())
-            .setTitle("Off track")
-            .setMessage("You are off the route. Please get back to the track.")
-            .setCancelable(false)
-            .setPositiveButton("OK", null)
-            .create()
-        offTrackDialog?.show()
+    private fun showDirections() {
+        banner.show(
+            bannerState(instructionsLoading, instructions, lastOffTrack, lastDistanceToTrack, lastAlong, lastSpeed),
+            instructions
+        )
+        val limits = instructions?.speedLimits.orEmpty()
+        rideStats.showSpeedLimit(if (lastOffTrack) null else speedLimitAt(limits, lastAlong))
     }
 
-    private fun dismissOffTrackDialog() {
-        offTrackDialog?.dismiss()
-        offTrackDialog = null
+    private fun loadInstructions(vehicleId: String?) {
+        instructionsJob?.cancel()
+        instructions = null
+        instructionsLoading = true
+        showDirections()
+        instructionsJob = lifecycleScope.launch {
+            val result = try {
+                instructionsApi.getInstructions(args.trackId, vehicleId).takeIf { it.isSuccessful }?.body()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.d("API-ERROR", e.stackTraceToString())
+                null
+            }
+            instructionsLoading = false
+            instructions = result
+            if (isNavigatingUiActive) showDirections()
+        }
+    }
+
+    private fun clearInstructions() {
+        instructionsJob?.cancel()
+        instructionsJob = null
+        instructions = null
+        instructionsLoading = false
+        lastAlong = 0.0
+        lastOffTrack = false
+        banner.hide()
     }
 
     private fun onLocationFrame(point: GeoPoint, bearing: Float) {
@@ -253,12 +283,14 @@ class TrackNavigation : Fragment() {
         txtUserBestSpd = view.findViewById(R.id.txtUserBestSpd)
         statsLayout = view.findViewById(R.id.statsLayout)
         rideStats = RideStatsCard(view.findViewById(R.id.rideStats))
+        banner = NavigationBanner(view.findViewById(R.id.navBanner)) { loadInstructions(TrackNavigationService.vehicleId) }
         btnMoreDetails = view.findViewById(R.id.btnMoreDetails)
         txtVehicleMissing = view.findViewById(R.id.txtVehicleMissing)
 
         api = (requireActivity() as MainActivity).trackService
         questApi = (requireActivity() as MainActivity).questService
         profileApi = (requireActivity() as MainActivity).profileService
+        instructionsApi = (requireActivity() as MainActivity).instructionsService
 
         setupMap(view)
 
@@ -499,6 +531,11 @@ class TrackNavigation : Fragment() {
                 isNavigatingUiActive = true
                 compass.setActive(true)
                 myLocationOverlay.followsAnimation = true
+                if (instructions == null && instructionsJob?.isActive != true) {
+                    loadInstructions(TrackNavigationService.vehicleId)
+                } else {
+                    showDirections()
+                }
             }
         } else if (isNavigatingUiActive) {
             stopNavigation(true)
@@ -605,6 +642,7 @@ class TrackNavigation : Fragment() {
         intent.putExtra("trackId", args.trackId)
         intent.putExtra("vehicle", travelVehicle?.id)
         requireContext().startForegroundService(intent)
+        loadInstructions(travelVehicle?.id)
     }
 
 
@@ -616,6 +654,7 @@ class TrackNavigation : Fragment() {
         myLocationOverlay.followsAnimation = false
 
         rideStats.reset()
+        clearInstructions()
         statsLayout.visibility = View.VISIBLE
 
         val intent = Intent(requireContext(), TrackNavigationService::class.java)

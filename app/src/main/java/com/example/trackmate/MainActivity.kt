@@ -77,6 +77,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var trackService: TrackService
     lateinit var postService: PostService
     lateinit var routeService: RouteService
+    lateinit var instructionsService: InstructionsService
     lateinit var cache: Cache
     lateinit var cookieJar: SessionCookieJar
 
@@ -160,6 +161,11 @@ class MainActivity : AppCompatActivity() {
             .client(client.newBuilder().readTimeout(0, TimeUnit.MILLISECONDS).build())
             .build()
             .create(RouteService::class.java)
+        // a long track waits on the server's queue, about a second per 100 km
+        instructionsService = retrofit.newBuilder()
+            .client(client.newBuilder().readTimeout(2, TimeUnit.MINUTES).build())
+            .build()
+            .create(InstructionsService::class.java)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)

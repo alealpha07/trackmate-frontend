@@ -193,6 +193,7 @@ class TrackNavigationService : Service() {
                 putExtra("along", it.along.toFloat())
                 putExtra("remaining", it.remaining.toFloat())
                 putExtra("offTrack", it.offTrack)
+                putExtra("distanceToTrack", it.distanceToTrack.toFloat())
             }
             putExtra("isFinished", navigationCompleted)
             putExtra("speed", speedKmh)
