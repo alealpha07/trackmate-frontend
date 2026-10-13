@@ -262,6 +262,40 @@
                             android:text="@string/plan_avoid_lts4"
                             android:tooltipText="@string/plan_avoid_lts4_hint" />
 
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:orientation="horizontal"
+                            android:tooltipText="@string/plan_max_detour_hint">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/plan_max_detour"
+                                android:textColor="?android:attr/textColorPrimary"
+                                android:textSize="15sp" />
+
+                            <TextView
+                                android:id="@+id/txtMaxDetour"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="?android:attr/textColorSecondary"
+                                android:textSize="15sp" />
+
+                        </LinearLayout>
+
+                        <com.google.android.material.slider.Slider
+                            android:id="@+id/sliderMaxDetour"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:contentDescription="@string/plan_max_detour"
+                            android:stepSize="1"
+                            android:valueFrom="0"
+                            android:valueTo="4"
+                            app:labelBehavior="gone" />
+
                     </LinearLayout>
 
                     <LinearLayout

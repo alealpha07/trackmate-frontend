@@ -44,6 +44,10 @@
     <string name="plan_cycleways_only_hint">Cycleways, cycle tracks, bike lanes and bike streets. Other roads only where none connects, as little as possible</string>
     <string name="plan_avoid_unpaved_hint">Gravel, dirt or grass only where nothing paved connects, as little as possible. Tracks and paths without a mapped surface count as unpaved</string>
     <string name="plan_avoid_lts4_hint">Roads at the highest level of traffic stress (fast or multi-lane traffic without a separated bike lane) only where nothing else connects, as little as possible</string>
+    <string name="plan_max_detour">Max. extra length</string>
+    <string name="plan_max_detour_hint">How much longer the safest route may be than the shortest one. The filters are kept as far as they fit</string>
+    <string name="plan_no_limit">No limit</string>
+    <string name="plan_percent">%1$d%%</string>
     <string name="plan_plan">Plan route</string>
     <string name="plan_planning">Planning…</string>
     <string name="plan_downloading">Downloading map data: %1$d of %2$d areas… new areas take a few seconds each.</string>

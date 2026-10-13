@@ -50,6 +50,7 @@ import com.google.android.material.color.MaterialColors
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.progressindicator.CircularProgressIndicatorSpec
 import com.google.android.material.progressindicator.IndeterminateDrawable
+import com.google.android.material.slider.Slider
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputLayout
 import com.squareup.moshi.Moshi
@@ -96,6 +97,8 @@ private const val SEARCH_MIN_CHARS = 3
 private const val SEARCH_DEBOUNCE_MS = 300L
 // same limit as the server
 private const val MAX_LEG_METERS = 50_000.0
+// percent over the shortest route, null for no limit
+private val MAX_DETOUR_STOPS = listOf(10, 15, 25, 50, null)
 private const val EARTH_RADIUS_METERS = 6_371_008.8
 // a few meters is just the road width
 private const val CONNECTOR_MIN_METERS = 10.0
@@ -129,6 +132,7 @@ class TrackPlanner : Fragment() {
     private var vehicle = Vehicle.BICYCLE
     // safety filters on by default
     private val filterStates = linkedMapOf("cyclewaysOnly" to true, "avoidLts4" to true, "avoidUnpaved" to false)
+    private var maxDetourIndex = MAX_DETOUR_STOPS.indexOf(25)
     private var currentRoute: PlannedRoute? = null
     private var savedTrackId: Int? = null // the current route's track, once saved
     private var planSequence = 0 // ignore answers of outdated requests
@@ -504,8 +508,21 @@ class TrackPlanner : Fragment() {
                 }
             }
         }
+        val txtMaxDetour = view.findViewById<TextView>(R.id.txtMaxDetour)
+        txtMaxDetour.text = maxDetourText()
+        view.findViewById<Slider>(R.id.sliderMaxDetour).apply {
+            value = maxDetourIndex.toFloat()
+            addOnChangeListener { _, value, fromUser ->
+                maxDetourIndex = value.toInt()
+                txtMaxDetour.text = maxDetourText()
+                if (fromUser) routeChanged()
+            }
+        }
         updateFilterGroups()
     }
+
+    private fun maxDetourText(): String =
+        MAX_DETOUR_STOPS[maxDetourIndex]?.let { getString(R.string.plan_percent, it) } ?: getString(R.string.plan_no_limit)
 
     private fun updateFilterGroups() {
         safetyGroup.isVisible = policy == "safest"
@@ -719,7 +736,8 @@ class TrackPlanner : Fragment() {
             end = points.last(),
             vehicle = vehicle.id,
             policy = policy,
-            filters = selectedFilters()
+            filters = selectedFilters(),
+            maxDetour = if (policy == "safest") MAX_DETOUR_STOPS[maxDetourIndex] else null
         )
         val call = routeService.plan(request)
         planCall = call

@@ -19,7 +19,9 @@ data class PlanRequest(
     val end: LatLng,
     val vehicle: String,
     val policy: String,
-    val filters: Map<String, Boolean>
+    val filters: Map<String, Boolean>,
+    // percent, null for no limit
+    val maxDetour: Int? = null
 )
 
 // meters and seconds
