@@ -218,6 +218,7 @@ class TrackNavigation : Fragment() {
     private fun loadInstructions(vehicleId: String?) {
         instructionsJob?.cancel()
         instructions = null
+        TrackNavigationService.instructions = null
         instructionsLoading = true
         showDirections()
         instructionsJob = lifecycleScope.launch {
@@ -231,6 +232,7 @@ class TrackNavigation : Fragment() {
             }
             instructionsLoading = false
             instructions = result
+            TrackNavigationService.instructions = result
             if (isNavigatingUiActive) showDirections()
         }
     }
@@ -239,6 +241,7 @@ class TrackNavigation : Fragment() {
         instructionsJob?.cancel()
         instructionsJob = null
         instructions = null
+        TrackNavigationService.instructions = null
         instructionsLoading = false
         lastAlong = 0.0
         lastOffTrack = false
@@ -531,6 +534,7 @@ class TrackNavigation : Fragment() {
                 isNavigatingUiActive = true
                 compass.setActive(true)
                 myLocationOverlay.followsAnimation = true
+                if (instructions == null) instructions = TrackNavigationService.instructions
                 if (instructions == null && instructionsJob?.isActive != true) {
                     loadInstructions(TrackNavigationService.vehicleId)
                 } else {

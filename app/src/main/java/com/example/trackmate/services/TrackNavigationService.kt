@@ -45,6 +45,7 @@ class TrackNavigationService : Service() {
     private lateinit var workerThread: HandlerThread
     private lateinit var updateHandler: Handler
     private lateinit var updateRunnable: Runnable
+    private lateinit var voice: VoiceGuidance
 
     companion object {
         var isNavigating = false
@@ -53,6 +54,8 @@ class TrackNavigationService : Service() {
         var trackId: Int = -1
         // null lets the server use the track's vehicle
         var vehicleId: String? = null
+        @Volatile
+        var instructions: TrackInstructions? = null
         fun getLastNavigationData(): NewTravelRequest? = lastNavigationData
         fun getLastNavigationPoints(): List<TrackPoint>? = lastNavigationPoints
     }
@@ -60,6 +63,7 @@ class TrackNavigationService : Service() {
     override fun onCreate() {
         super.onCreate()
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        voice = VoiceGuidance(this)
 
         workerThread = HandlerThread("NavServiceThread")
         workerThread.start()
@@ -202,6 +206,7 @@ class TrackNavigationService : Service() {
             }
         }
         LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(intent)
+        progress?.let { voice.update(instructions, it.along, speedKmh, it.offTrack) }
     }
 
     private fun checkCompletionCriteria(progress: TrackProgress) {
@@ -214,6 +219,7 @@ class TrackNavigationService : Service() {
 
         if (endReached && lengthSimilar && middleEnough) {
             navigationCompleted = true
+            voice.arrival()
             isNavigating = false
             lastNavigationData = calculateTravelData()
             lastNavigationPoints = calculateTravelPoints()
@@ -260,6 +266,7 @@ class TrackNavigationService : Service() {
 
     override fun onDestroy() {
         locationCallback?.let { fusedLocationClient.removeLocationUpdates(it) }
+        voice.shutdown()
 
         // navigationPath is only touched on the worker thread
         updateHandler.removeCallbacksAndMessages(null)
@@ -270,6 +277,7 @@ class TrackNavigationService : Service() {
             }
             isNavigating = false
             trackId = -1
+            instructions = null
         }
         workerThread.quitSafely()
 

@@ -5,6 +5,7 @@ import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Headers
 import retrofit2.http.Query
+import kotlin.math.roundToInt
 
 @JsonClass(generateAdapter = true)
 data class Maneuver(
@@ -18,6 +19,7 @@ data class Maneuver(
     val verbalPost: String? = null
 ) {
     val isDeparture get() = type in DEPART_TYPES
+    val spokenText get() = verbalPre ?: text
 }
 
 @JsonClass(generateAdapter = true)
@@ -92,3 +94,96 @@ fun bannerState(
     val then = if (showsThen(maneuvers, index, speedKmh)) index + 1 else null
     return BannerState.Next(index, (maneuvers[index].along - along).coerceAtLeast(0.0), then)
 }
+
+private val ARRIVE_TYPES = setOf(4, 5, 6)
+private const val ROUNDABOUT_ENTER = 26
+private const val ROUNDABOUT_EXIT = 27
+
+const val VOICE_EARLY_SECONDS = 20.0
+const val VOICE_NOW_SECONDS = 6.0
+const val VOICE_NOW_MIN_METERS = 25.0
+const val VOICE_AFTER_DELAY_METERS = 20.0
+const val VOICE_AFTER_WINDOW_METERS = 200.0
+const val VOICE_AFTER_MIN_METERS = 1000.0
+
+fun voiceEarlyMinMeters(vehicle: String) = when (vehicle) {
+    "car", "motorcycle" -> 300.0
+    "foot" -> 60.0
+    else -> 100.0
+}
+
+sealed class VoicePrompt {
+    data class Depart(val index: Int) : VoicePrompt()
+    data class Early(val index: Int, val meters: Int) : VoicePrompt()
+    data class Now(val index: Int) : VoicePrompt()
+    data class After(val index: Int) : VoicePrompt()
+    object OffTrack : VoicePrompt()
+}
+
+class VoiceGuide(private val maneuvers: List<Maneuver>, vehicle: String) {
+    private val earlyMinMeters = voiceEarlyMinMeters(vehicle)
+    private val spoken = mutableSetOf<Pair<Int, Int>>()
+    private val said = mutableSetOf<Int>()
+    private var wasOffTrack = false
+
+    fun update(along: Double, speedKmh: Float, offTrack: Boolean): VoicePrompt? {
+        if (offTrack) {
+            if (wasOffTrack) return null
+            wasOffTrack = true
+            return VoicePrompt.OffTrack
+        }
+        wasOffTrack = false
+        val index = nextManeuverIndex(maneuvers, along)
+        if (index < 0) return null
+        val next = maneuvers[index]
+        val meters = next.along - along
+        val speed = speedKmh / 3.6
+        val nowMeters = maxOf(VOICE_NOW_MIN_METERS, speed * VOICE_NOW_SECONDS)
+        val earlyMeters = maxOf(earlyMinMeters, speed * VOICE_EARLY_SECONDS)
+        val previous = maneuvers.getOrNull(index - 1)
+
+        if (meters <= nowMeters) {
+            if (!markSpoken(index, NOW)) return null
+            markSpoken(index, EARLY)
+            if (previous != null && index - 1 in said && coveredBy(previous, next, nowMeters)) return null
+            said += index
+            return VoicePrompt.Now(index)
+        }
+        if (previous != null && previous.isDeparture && markSpoken(index - 1, NOW)) {
+            said += index - 1
+            return VoicePrompt.Depart(index - 1)
+        }
+        if (meters <= earlyMeters && next.type !in ARRIVE_TYPES &&
+            (previous == null || next.along - previous.along > 2 * nowMeters) && markSpoken(index, EARLY)
+        ) {
+            return VoicePrompt.Early(index, roundSpokenMeters(meters))
+        }
+        if (previous?.verbalPost != null && meters > maxOf(VOICE_AFTER_MIN_METERS, 2 * earlyMeters) &&
+            along - previous.along in VOICE_AFTER_DELAY_METERS..VOICE_AFTER_WINDOW_METERS && markSpoken(index - 1, AFTER)
+        ) {
+            return VoicePrompt.After(index - 1)
+        }
+        return null
+    }
+
+    fun arrival(): VoicePrompt? {
+        val index = maneuvers.indexOfLast { it.type in ARRIVE_TYPES }
+        return if (index >= 0 && markSpoken(index, NOW)) VoicePrompt.Now(index) else null
+    }
+
+    // valhalla appends a close maneuver ("Then ..."), and a roundabout entry already names the exit
+    private fun coveredBy(previous: Maneuver, next: Maneuver, nowMeters: Double): Boolean =
+        previous.verbalPre?.endsWith(next.spokenText) == true ||
+            (previous.type == ROUNDABOUT_ENTER && next.type == ROUNDABOUT_EXIT && next.along - previous.along <= nowMeters)
+
+    private fun markSpoken(index: Int, stage: Int) = spoken.add(index to stage)
+
+    private companion object {
+        const val EARLY = 0
+        const val NOW = 1
+        const val AFTER = 2
+    }
+}
+
+fun roundSpokenMeters(meters: Double): Int =
+    if (meters < 100) ((meters / 10).roundToInt() * 10).coerceAtLeast(10) else (meters / 50).roundToInt() * 50

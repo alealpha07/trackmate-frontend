@@ -1,11 +1,14 @@
 package com.example.trackmate
 
 import android.view.View
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import com.example.trackmate.services.BannerState
 import com.example.trackmate.services.TrackInstructions
+import com.example.trackmate.services.isVoiceMuted
+import com.example.trackmate.services.setVoiceMuted
 
 class NavigationBanner(private val root: View, onRetry: () -> Unit) {
     private val icon: ImageView = root.findViewById(R.id.imgManeuver)
@@ -15,10 +18,22 @@ class NavigationBanner(private val root: View, onRetry: () -> Unit) {
     private val thenRow: View = root.findViewById(R.id.bannerThen)
     private val thenIcon: ImageView = root.findViewById(R.id.imgThenManeuver)
     private val thenText: TextView = root.findViewById(R.id.txtThenText)
+    private val voiceButton: ImageButton = root.findViewById(R.id.btnVoice)
     private var state: BannerState? = null
 
     init {
         root.setOnClickListener { if (state == BannerState.Unavailable) onRetry() }
+        showVoice(isVoiceMuted(root.context))
+        voiceButton.setOnClickListener {
+            val muted = !isVoiceMuted(root.context)
+            setVoiceMuted(root.context, muted)
+            showVoice(muted)
+        }
+    }
+
+    private fun showVoice(muted: Boolean) {
+        voiceButton.setImageResource(if (muted) R.drawable.ic_volume_off_24 else R.drawable.ic_volume_up_24)
+        voiceButton.contentDescription = root.context.getString(if (muted) R.string.voice_unmute else R.string.voice_mute)
     }
 
     fun hide() {

@@ -101,6 +101,11 @@
     <string name="directions_back_to_track">Back to the track</string>
     <string name="directions_then">Then</string>
     <string name="speed_limit_description">Speed limit %1$d km/h</string>
+    <string name="voice_mute">Mute voice guidance</string>
+    <string name="voice_unmute">Unmute voice guidance</string>
+    <string name="voice_in_meters">In %1$d meters, %2$s</string>
+    <string name="voice_off_track">You are off the track. Head back to the track.</string>
+    <string name="voice_missing">No %1$s voice installed, voice guidance is off</string>
     <!-- Ride stats -->
     <string name="ride_stats_km">km</string>
     <string name="ride_stats_time">time</string>
