@@ -43,7 +43,6 @@ interface InstructionsService {
     @GET("track/instructions")
     suspend fun getInstructions(
         @Query("id") id: Int,
-        @Query("vehicle") vehicle: String? = null,
-        @Query("lang") lang: String = "en"
+        @Query("vehicle") vehicle: String? = null
     ): Response<TrackInstructions>
 }

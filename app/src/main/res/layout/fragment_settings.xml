@@ -22,6 +22,32 @@
         style="@style/Widget.MaterialComponents.Button.TextButton" />
 
     <Button
+        android:id="@+id/btnTheme"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:gravity="start|center_vertical"
+        android:text="@string/settings_theme"
+        app:icon="@drawable/ic_theme_24"
+        app:layout_constraintTop_toBottomOf="@id/btnCredits"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        style="@style/Widget.MaterialComponents.Button.TextButton" />
+
+    <Button
+        android:id="@+id/btnLanguage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:gravity="start|center_vertical"
+        android:text="@string/settings_language"
+        app:icon="@drawable/ic_language_24"
+        app:layout_constraintTop_toBottomOf="@id/btnTheme"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        style="@style/Widget.MaterialComponents.Button.TextButton" />
+
+    <Button
         android:id="@+id/btnChangePassword"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -29,7 +55,7 @@
         android:gravity="start|center_vertical"
         android:text="@string/settings_change_password"
         app:icon="@drawable/ic_lock_24"
-        app:layout_constraintTop_toBottomOf="@id/btnCredits"
+        app:layout_constraintTop_toBottomOf="@id/btnLanguage"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         style="@style/Widget.MaterialComponents.Button.TextButton" />
@@ -55,8 +81,8 @@
         android:gravity="start|center_vertical"
         android:text="@string/settings_delete_account"
         app:icon="@drawable/ic_delete_24"
-        android:textColor="@android:color/holo_red_dark"
-        app:iconTint="@android:color/holo_red_dark"
+        android:textColor="@color/danger"
+        app:iconTint="@color/danger"
         app:layout_constraintTop_toBottomOf="@id/btnExport"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -66,7 +92,7 @@
         android:id="@+id/btnLogout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Log Out"
+        android:text="@string/settings_logout"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

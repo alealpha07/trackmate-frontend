@@ -87,8 +87,7 @@ interface RouteService {
     @POST("route/plan")
     fun plan(
         @Body data: PlanRequest,
-        @Query("stream") stream: String = "1",
-        @Query("lang") lang: String = "en"
+        @Query("stream") stream: String = "1"
     ): Call<ResponseBody>
 
     @GET("route/geocode")
@@ -96,12 +95,9 @@ interface RouteService {
         @Query("text") text: String,
         @Query("lat") lat: String,
         @Query("lng") lng: String,
-        @Query("full") full: String? = null,
-        @Query("lang") lang: String = "en"
+        @Query("full") full: String? = null
     ): Response<List<GeocodeResult>>
 
     @GET("vehicle")
-    suspend fun vehicles(
-        @Query("lang") lang: String = "en"
-    ): Response<List<VehicleInfo>>
+    suspend fun vehicles(): Response<List<VehicleInfo>>
 }

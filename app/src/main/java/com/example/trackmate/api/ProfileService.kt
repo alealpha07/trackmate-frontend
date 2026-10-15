@@ -35,56 +35,44 @@ interface ProfileService {
     @Multipart
     @POST("user/image")
     suspend fun uploadImage(
-        @Part file: MultipartBody.Part,
-        @Query("lang") lang: String = "en"
+        @Part file: MultipartBody.Part
     ): Response<ResponseBody>
 
     @GET("user/image")
     @Streaming
     suspend fun getProfileImage(
-        @Query("id") id: Int,
-        @Query("lang") lang: String = "en"
+        @Query("id") id: Int
     ): Response<ResponseBody>
 
     @DELETE("user/image")
-    suspend fun deleteImage(
-        @Query("lang") lang: String = "en"
-    ): Response<ResponseBody>
+    suspend fun deleteImage(): Response<ResponseBody>
 
     // personal data, keep it out of the HTTP cache
     @Headers("Cache-Control: no-store")
     @GET("user/export")
     @Streaming
-    suspend fun exportData(
-        @Query("lang") lang: String = "en"
-    ): Response<ResponseBody>
+    suspend fun exportData(): Response<ResponseBody>
 
     @HTTP(method = "DELETE", path = "user", hasBody = true)
     suspend fun deleteAccount(
-        @Body data: DeleteAccountRequest,
-        @Query("lang") lang: String = "en"
+        @Body data: DeleteAccountRequest
     ): Response<ResponseBody>
 
     @PUT("user")
     suspend fun editProfile(
-        @Body data: EditProfileRequest,
-        @Query("lang") lang: String = "en"
+        @Body data: EditProfileRequest
     ): Response<ResponseBody>
 
     @GET("user/vehicles")
-    suspend fun getVehicles(
-        @Query("lang") lang: String = "en"
-    ): Response<List<String>>
+    suspend fun getVehicles(): Response<List<String>>
 
     @PUT("user/vehicles")
     suspend fun editVehicles(
-        @Body data: EditVehiclesRequest,
-        @Query("lang") lang: String = "en"
+        @Body data: EditVehiclesRequest
     ): Response<ResponseBody>
 
     @GET("user")
     suspend fun getProfile(
-        @Query("id") id: Int,
-        @Query("lang") lang: String = "en"
+        @Query("id") id: Int
     ): Response<ProfileResponse>
 }

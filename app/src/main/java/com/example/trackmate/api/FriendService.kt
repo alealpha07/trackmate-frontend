@@ -30,35 +30,27 @@ interface FriendService {
 
     @POST("friend/request")
     suspend fun sendRequest(
-        @Body data: FriendRequestAction,
-        @Query("lang") lang: String = "en"
+        @Body data: FriendRequestAction
     ): Response<ResponseBody>
 
     @PUT("friend/request")
     suspend fun acceptRequest(
-        @Body data: FriendRequestAction,
-        @Query("lang") lang: String = "en"
+        @Body data: FriendRequestAction
     ): Response<ResponseBody>
 
     @DELETE("friend")
     suspend fun removeFriend(
-        @Query("id") id: Int,
-        @Query("lang") lang: String = "en"
+        @Query("id") id: Int
     ): Response<ResponseBody>
 
     @GET("friend/request")
-    suspend fun getFriendRequests(
-        @Query("lang") lang: String = "en"
-    ): Response<List<FriendRequestsResponse>>
+    suspend fun getFriendRequests(): Response<List<FriendRequestsResponse>>
 
     @GET("friend/request/sent")
-    suspend fun getSentFriendRequests(
-        @Query("lang") lang: String = "en"
-    ): Response<List<FriendRequestsResponse>>
+    suspend fun getSentFriendRequests(): Response<List<FriendRequestsResponse>>
 
     @GET("friend")
     suspend fun getFriends(
-        @Query("id") id: Int,
-        @Query("lang") lang: String = "en"
+        @Query("id") id: Int
     ): Response<List<FriendResponse>>
 }

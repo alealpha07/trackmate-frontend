@@ -37,29 +37,22 @@ interface AuthService {
 
     @POST("auth/login")
     suspend fun login(
-        @Body credentials: LoginRequest,
-        @Query("lang") lang: String = "en"
+        @Body credentials: LoginRequest
     ): Response<ResponseBody>
 
     @POST("auth/register")
     suspend fun register(
-        @Body credentials: RegisterRequest,
-        @Query("lang") lang: String = "en"
+        @Body credentials: RegisterRequest
     ): Response<ResponseBody>
 
     @POST("auth/logout")
-    suspend fun logout(
-        @Query("lang") lang: String = "en"
-    ): Response<Unit>
+    suspend fun logout(): Response<Unit>
 
     @GET("auth/user")
-    suspend fun getUser(
-        @Query("lang") lang: String = "en"
-    ): Response<UserResponse>
+    suspend fun getUser(): Response<UserResponse>
 
     @PUT("auth/password")
     suspend fun changePassword(
-        @Body data: ChangePasswordRequest,
-        @Query("lang") lang: String = "en"
+        @Body data: ChangePasswordRequest
     ): Response<ResponseBody>
 }

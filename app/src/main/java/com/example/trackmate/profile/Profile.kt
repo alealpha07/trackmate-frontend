@@ -80,8 +80,8 @@ class Profile : Fragment() {
                 val action = ProfileDirections.actionProfileToTrackNavigation(post.trackId)
                 val dialog = AlertDialog.Builder(requireContext())
                     .setView(dialogView)
-                    .setPositiveButton("Edit", null)
-                    .setNegativeButton("Delete", null)
+                    .setPositiveButton(R.string.dialog_edit, null)
+                    .setNegativeButton(R.string.dialog_delete, null)
                     .create()
 
                 dialog.setOnShowListener {
@@ -101,9 +101,9 @@ class Profile : Fragment() {
                         descText.setText(post.description)
                         AlertDialog.Builder(requireContext())
                             .setView(editDialogView)
-                            .setTitle("Edit Post")
-                            .setMessage("Editing post ${post.title}")
-                            .setPositiveButton("Confirm") { _, _ ->
+                            .setTitle(R.string.post_edit_title)
+                            .setMessage(getString(R.string.post_edit_message, post.title))
+                            .setPositiveButton(R.string.dialog_confirm) { _, _ ->
                                 apiCallCoroutine.launch {
                                     try {
                                         val postRequest = PostRequest(
@@ -121,14 +121,14 @@ class Profile : Fragment() {
                                     }
                                 }
                             }
-                            .setNegativeButton("Cancel", null)
+                            .setNegativeButton(R.string.dialog_cancel, null)
                             .showAboveKeyboard()
                     }
                     negativeButton.setOnClickListener {
                         AlertDialog.Builder(requireContext())
-                            .setTitle("Delete Post")
-                            .setMessage("Do you really want to delete the post ${post.title}?")
-                            .setPositiveButton("Yes") { _, _ ->
+                            .setTitle(R.string.post_delete_title)
+                            .setMessage(getString(R.string.post_delete_message, post.title))
+                            .setPositiveButton(R.string.dialog_yes) { _, _ ->
                                 apiCallCoroutine.launch {
                                     try {
                                         postApi.deletePost(post.id)
@@ -211,10 +211,12 @@ class Profile : Fragment() {
                         val profile = profileResponse.body()!!
                         withContext(Dispatchers.Main) {
                             username.text = profile.username
-                            level.text = "Level " + profile.level.toString()
-                            friendsCount.text = profile.friendsNumber.toString() + " Friends"
+                            level.text = getString(R.string.profile_level, profile.level)
+                            friendsCount.text = resources.getQuantityString(
+                                R.plurals.profile_friends, profile.friendsNumber, profile.friendsNumber
+                            )
                             kmTravelled.text =
-                                "${String.format("%.0f", profile.totalTravelledLength)} Km travelled"
+                                getString(R.string.profile_km_travelled, "%.0f".format(profile.totalTravelledLength))
                             bio.text = profile.bio
                         }
                     }

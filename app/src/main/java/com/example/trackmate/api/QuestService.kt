@@ -37,18 +37,14 @@ interface QuestService {
 
     @PUT("quest")
     suspend fun collectQuest(
-        @Body data: CollectQuestRequest,
-        @Query("lang") lang: String = "en"
+        @Body data: CollectQuestRequest
     ): Response<ResponseBody>
 
     @POST("quest")
     suspend fun increaseQuest(
-        @Body data: IncreaseQuestRequest,
-        @Query("lang") lang: String = "en"
+        @Body data: IncreaseQuestRequest
     ): Response<ResponseBody>
 
     @GET("quest")
-    suspend fun getQuests(
-        @Query("lang") lang: String = "en"
-    ): Response<List<QuestResponse>>
+    suspend fun getQuests(): Response<List<QuestResponse>>
 }

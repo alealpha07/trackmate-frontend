@@ -78,7 +78,8 @@ class FeedPostsAdapter(
             val likeResource =
                 if (postLiked) R.drawable.baseline_thumb_up_alt_24 else R.drawable.baseline_thumb_up_off_alt_24
             holder.likeButton.setBackgroundResource(likeResource)
-            holder.likeCount.text = "$postLikeCount Likes"
+            holder.likeCount.text =
+                holder.itemView.resources.getQuantityString(R.plurals.post_likes, postLikeCount, postLikeCount)
         }
 
         fun updateSaveState() {
@@ -214,8 +215,8 @@ class Home : Fragment() {
         postsAdapter = FeedPostsAdapter(activity as MainActivity)
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = postsAdapter
-        tabLayout.addTab(tabLayout.newTab().setText("Trending"))
-        tabLayout.addTab(tabLayout.newTab().setText("Friends"))
+        tabLayout.addTab(tabLayout.newTab().setText(R.string.home_trending))
+        tabLayout.addTab(tabLayout.newTab().setText(R.string.friends_title))
         api = (activity as MainActivity).postService
 
         loadTrendingPosts(reset = true)
@@ -261,7 +262,7 @@ class Home : Fragment() {
                     if (!isAdded) return@withContext
                     val post = response.body()
                     if (!response.isSuccessful || post == null) {
-                        Toast.makeText(requireContext(), "This post is no longer available", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), R.string.post_unavailable, Toast.LENGTH_SHORT).show()
                         return@withContext
                     }
 

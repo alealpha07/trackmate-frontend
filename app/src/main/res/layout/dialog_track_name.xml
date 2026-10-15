@@ -10,7 +10,7 @@
         android:id="@+id/trackNameLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Track name">
+        android:hint="@string/track_name_hint">
 
         <EditText
             android:id="@+id/editTrackName"
@@ -32,7 +32,7 @@
             android:id="@+id/txtVehicle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Vehicle" />
+            android:text="@string/plan_vehicle" />
 
         <com.google.android.material.button.MaterialButtonToggleGroup
             android:id="@+id/vehicleToggle"

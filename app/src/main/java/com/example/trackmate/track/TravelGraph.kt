@@ -15,6 +15,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.doOnNextLayout
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -43,6 +44,7 @@ import com.example.trackmate.util.formatTime
 import com.example.trackmate.util.loadProfileImage
 import com.example.trackmate.util.showTrackVehicle
 import com.google.android.material.chip.ChipGroup
+import com.google.android.material.color.MaterialColors
 import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.charts.HorizontalBarChart
 import com.github.mikephil.charting.charts.LineChart
@@ -159,13 +161,12 @@ class TravelGraph : Fragment() {
 
         val trackLength = trackDetails.overallBest?.distance
         binding.txtTrackLength.text = if (trackLength != null) {
-            "Length: ${"%.2f".format(trackLength)} km"
+            getString(R.string.track_length, "%.2f".format(trackLength))
         } else {
-            "Length: N/A"
+            getString(R.string.track_length_missing)
         }
 
-        binding.txtUserTravelCount.text =
-            "Your Travels: ${trackDetails.travelCount}"
+        binding.txtUserTravelCount.text = getString(R.string.graph_travel_count, trackDetails.travelCount)
     }
 
     private val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.ITALIAN)
@@ -233,7 +234,7 @@ class TravelGraph : Fragment() {
     private fun setupUserFilter(travels: List<TravelItem>, currentUserId: Int, ownerId: Int?) {
         allTravels = travels
 
-        val usernames = travels.associate { it.userId to (it.username ?: "User #${it.userId}") }
+        val usernames = travels.associate { it.userId to (it.username ?: getString(R.string.graph_unknown_user, it.userId)) }
         val userIds = usernames.keys.sortedWith(
             compareBy<Int>({ it != ownerId }, { it != currentUserId }, { usernames[it]!!.lowercase() })
         )
@@ -248,8 +249,8 @@ class TravelGraph : Fragment() {
 
         val labels = userIds.map { id ->
             val tags = listOfNotNull(
-                "owner".takeIf { id == ownerId },
-                "you".takeIf { id == currentUserId }
+                getString(R.string.graph_tag_owner).takeIf { id == ownerId },
+                getString(R.string.graph_tag_you).takeIf { id == currentUserId }
             )
             if (tags.isEmpty()) usernames[id]!! else "${usernames[id]} (${tags.joinToString(", ")})"
         }
@@ -300,15 +301,16 @@ class TravelGraph : Fragment() {
         )
 
         val labels = listOf(
-            "My Max Speed",
-            "Global Max Speed",
-            "My Avg Speed",
-            "Global Avg Speed"
+            getString(R.string.graph_my_max_speed),
+            getString(R.string.graph_global_max_speed),
+            getString(R.string.graph_my_avg_speed),
+            getString(R.string.graph_global_avg_speed)
         )
+        val textColor = MaterialColors.getColor(chart, android.R.attr.textColorPrimary)
 
-        val dataSet = BarDataSet(entries, "Speed Comparison").apply {
+        val dataSet = BarDataSet(entries, getString(R.string.graph_speed_comparison)).apply {
             colors = ColorTemplate.MATERIAL_COLORS.toList()
-            valueTextColor = Color.BLACK
+            valueTextColor = textColor
             valueTextSize = 14f
         }
 
@@ -319,6 +321,7 @@ class TravelGraph : Fragment() {
             setDrawGridLines(false)
             granularity = 1f
             textSize = 12f
+            this.textColor = textColor
             labelRotationAngle = -20f
             valueFormatter = object : com.github.mikephil.charting.formatter.ValueFormatter() {
                 override fun getFormattedValue(value: Float): String {
@@ -330,9 +333,10 @@ class TravelGraph : Fragment() {
 
         chart.axisLeft.apply {
             textSize = 12f
+            this.textColor = textColor
             valueFormatter = object : com.github.mikephil.charting.formatter.ValueFormatter() {
                 override fun getFormattedValue(value: Float): String {
-                    return "${value.toInt()} km/h"
+                    return getString(R.string.speed_kmh, value.toInt().toString())
                 }
             }
         }
@@ -350,7 +354,7 @@ class TravelGraph : Fragment() {
         val mapView = binding.speedMapView
         mapView.setDestroyMode(false)
         val mapStyle = getSavedMapStyle(requireContext())
-        mapView.setTileSource(tileSourceFor(mapStyle))
+        mapView.setTileSource(tileSourceFor(requireContext(), mapStyle))
         mapView.zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
         MapCredit(this, binding.mapCredit.root, mapView)
         setSpeedMapInteractive(false)
@@ -400,7 +404,7 @@ class TravelGraph : Fragment() {
         setSystemChromeVisible(false)
         setSpeedMapInteractive(true)
         binding.btnSpeedMapFullscreen.setImageResource(R.drawable.ic_fullscreen_exit_24)
-        binding.btnSpeedMapFullscreen.contentDescription = "Exit fullscreen"
+        binding.btnSpeedMapFullscreen.contentDescription = getString(R.string.fullscreen_exit)
         exitFullscreenOnBack.isEnabled = true
         binding.speedMapView.doOnNextLayout { fitSpeedMapToTrack() }
     }
@@ -426,7 +430,7 @@ class TravelGraph : Fragment() {
         setSystemChromeVisible(true)
         setSpeedMapInteractive(false)
         binding.btnSpeedMapFullscreen.setImageResource(R.drawable.ic_fullscreen_24)
-        binding.btnSpeedMapFullscreen.contentDescription = "Open fullscreen"
+        binding.btnSpeedMapFullscreen.contentDescription = getString(R.string.fullscreen_open)
         exitFullscreenOnBack.isEnabled = false
         binding.speedMapView.doOnNextLayout { fitSpeedMapToTrack() }
     }
@@ -531,7 +535,7 @@ class TravelGraph : Fragment() {
         listOf('A' to geoPoints.first(), 'B' to geoPoints.last()).forEach { (letter, point) ->
             val marker = Marker(mapView).apply {
                 position = point
-                title = if (letter == 'A') "Start" else "Finish"
+                title = getString(if (letter == 'A') R.string.marker_start else R.string.marker_finish)
                 icon = createLetterMarkerIcon(requireContext(), letter, fillColor = endpointColor)
                 setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
             }
@@ -542,18 +546,22 @@ class TravelGraph : Fragment() {
         speedMapBounds = BoundingBox.fromGeoPoints(geoPoints)
         fitSpeedMapToTrack()
 
-        binding.txtSpeedMin.text = "${minSpeed.roundToInt()} km/h"
-        binding.txtSpeedMark1.text = "${(minSpeed + range / 3f).roundToInt()} km/h"
-        binding.txtSpeedMark2.text = "${(minSpeed + range * 2f / 3f).roundToInt()} km/h"
-        binding.txtSpeedMax.text = "${maxSpeed.roundToInt()} km/h"
+        val speed = { value: Float -> getString(R.string.speed_kmh, value.roundToInt().toString()) }
+        binding.txtSpeedMin.text = speed(minSpeed)
+        binding.txtSpeedMark1.text = speed(minSpeed + range / 3f)
+        binding.txtSpeedMark2.text = speed(minSpeed + range * 2f / 3f)
+        binding.txtSpeedMax.text = speed(maxSpeed)
     }
 
-    private val speedColorStops = intArrayOf(
-        Color.parseColor("#000000"), // black: slowest
-        Color.parseColor("#2196F3"), // blue
-        Color.parseColor("#4CAF50"), // green
-        Color.parseColor("#F44336")  // red: fastest
-    )
+    private val speedColorStops by lazy {
+        intArrayOf(
+            // black on light maps, white on dark ones
+            ContextCompat.getColor(requireContext(), R.color.speed_slowest),
+            Color.parseColor("#2196F3"), // blue
+            Color.parseColor("#4CAF50"), // green
+            Color.parseColor("#F44336")  // red: fastest
+        )
+    }
 
     private fun speedToColor(t: Float): Int {
         val segmentCount = speedColorStops.size - 1
@@ -594,15 +602,17 @@ class TravelGraph : Fragment() {
             Entry(index.toFloat(), travel.time)
         }
 
-        val dataSet = LineDataSet(entries, "Time").apply {
-            color = Color.BLUE
-            setCircleColor(Color.BLUE)
+        val textColor = MaterialColors.getColor(chart, android.R.attr.textColorPrimary)
+        val lineColor = ContextCompat.getColor(requireContext(), R.color.chart_line)
+        val dataSet = LineDataSet(entries, getString(R.string.graph_time)).apply {
+            color = lineColor
+            setCircleColor(lineColor)
             lineWidth = 2f
             circleRadius = 6f
             valueTextSize = 14f
-            valueTextColor = Color.BLACK
+            valueTextColor = textColor
             setDrawFilled(true)
-            fillColor = Color.BLUE
+            fillColor = lineColor
             fillAlpha = 50
             setDrawValues(true)
             valueFormatter = object : com.github.mikephil.charting.formatter.ValueFormatter() {
@@ -623,6 +633,7 @@ class TravelGraph : Fragment() {
             setDrawGridLines(false)
             granularity = 1f
             textSize = 14f
+            this.textColor = textColor
             valueFormatter = object : com.github.mikephil.charting.formatter.ValueFormatter() {
                 override fun getFormattedValue(value: Float): String {
                     val index = value.toInt()
@@ -636,6 +647,7 @@ class TravelGraph : Fragment() {
         chart.axisLeft.apply {
             granularity = 1f
             textSize = 14f
+            this.textColor = textColor
             valueFormatter = object : com.github.mikephil.charting.formatter.ValueFormatter() {
                 override fun getFormattedValue(value: Float): String {
                     val totalSeconds = value.toInt()
@@ -652,6 +664,7 @@ class TravelGraph : Fragment() {
         chart.legend.apply {
             isEnabled = true
             textSize = 14f
+            this.textColor = textColor
             verticalAlignment =
                 com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
             horizontalAlignment =

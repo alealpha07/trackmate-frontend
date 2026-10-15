@@ -59,55 +59,55 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-            android:contentDescription="Lock map to north"
+            android:contentDescription="@string/map_lock_north"
             android:visibility="gone"
             app:fabSize="mini"
             app:srcCompat="@drawable/ic_compass_needle_24"
             app:tint="@null"
-            app:backgroundTint="@android:color/white" />
+            app:backgroundTint="@color/map_control" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/btnLayers"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-            android:contentDescription="Change map style"
+            android:contentDescription="@string/map_style"
             app:fabSize="mini"
             app:srcCompat="@drawable/ic_layers_24"
-            app:tint="@android:color/black"
-            app:backgroundTint="@android:color/white" />
+            app:tint="@color/map_control_icon"
+            app:backgroundTint="@color/map_control" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/btnMyLocation"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-            android:contentDescription="Center on my location"
+            android:contentDescription="@string/map_my_location"
             app:fabSize="mini"
             app:srcCompat="@drawable/ic_my_location_24"
-            app:tint="@android:color/black"
-            app:backgroundTint="@android:color/white" />
+            app:tint="@color/map_control_icon"
+            app:backgroundTint="@color/map_control" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/btnZoomIn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="2dp"
-            android:contentDescription="Zoom in"
+            android:contentDescription="@string/map_zoom_in"
             app:fabSize="mini"
             app:srcCompat="@drawable/ic_add_24"
-            app:tint="@android:color/black"
-            app:backgroundTint="@android:color/white" />
+            app:tint="@color/map_control_icon"
+            app:backgroundTint="@color/map_control" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/btnZoomOut"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:contentDescription="Zoom out"
+            android:contentDescription="@string/map_zoom_out"
             app:fabSize="mini"
             app:srcCompat="@drawable/ic_remove_24"
-            app:tint="@android:color/black"
-            app:backgroundTint="@android:color/white" />
+            app:tint="@color/map_control_icon"
+            app:backgroundTint="@color/map_control" />
 
     </LinearLayout>
 
@@ -116,7 +116,7 @@
         android:id="@+id/btnRecord"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Start Recording"
+        android:text="@string/record_start"
         app:layout_constraintBottom_toTopOf="@id/btnPlanRoute"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -132,20 +132,20 @@
         app:layout_constraintEnd_toEndOf="@id/btnOpenLibrary"
         app:icon="@drawable/ic_route_24"
         app:iconGravity="textStart"
-        android:backgroundTint="@color/cardview_light_background"
+        android:backgroundTint="@color/map_control"
         style="?attr/materialButtonOutlinedStyle"/>
 
     <Button
         android:id="@+id/btnOpenLibrary"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Saved Tracks"
+        android:text="@string/saved_tracks"
         app:layout_constraintBottom_toTopOf="@id/mapCredit"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginBottom="4dp"
         app:icon="@drawable/baseline_menu_24"
-        android:backgroundTint="@color/cardview_light_background"
+        android:backgroundTint="@color/map_control"
         style="?attr/materialButtonOutlinedStyle"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

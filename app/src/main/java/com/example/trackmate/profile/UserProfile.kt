@@ -128,10 +128,12 @@ class UserProfile : Fragment() {
                     }
                     withContext(Dispatchers.Main) {
                         username.text = profile.username
-                        level.text = "Level ${profile.level}"
-                        friendsCount.text = "${profile.friendsNumber} Friends"
+                        level.text = getString(R.string.profile_level, profile.level)
+                        friendsCount.text = resources.getQuantityString(
+                            R.plurals.profile_friends, profile.friendsNumber, profile.friendsNumber
+                        )
                         kmTravelled.text =
-                            "${String.format("%.0f", profile.totalTravelledLength)} Km travelled"
+                            getString(R.string.profile_km_travelled, "%.0f".format(profile.totalTravelledLength))
                         bio.text = profile.bio
                     }
                 }
@@ -142,6 +144,7 @@ class UserProfile : Fragment() {
     }
 
     private fun updateFriendButton(userId: Int) {
+        val res = resources
         apiCallCoroutine.launch {
             try {
                 val currentUser = authApi.getUser().body() ?: return@launch
@@ -154,25 +157,25 @@ class UserProfile : Fragment() {
                 val friendsIds =
                     friendApi.getFriends(currentId).body()?.map { it.id } ?: emptyList()
                 val (text, action) = when {
-                    friendsIds.contains(userId) -> "Remove Friend" to suspend {
+                    friendsIds.contains(userId) -> res.getString(R.string.friend_remove_friend) to suspend {
                         friendApi.removeFriend(
                             userId
                         )
                     }
 
-                    receivedIds.contains(userId) -> "Accept Friend Request" to suspend {
+                    receivedIds.contains(userId) -> res.getString(R.string.friend_accept) to suspend {
                         friendApi.acceptRequest(
                             FriendRequestAction(userId)
                         )
                     }
 
-                    sentIds.contains(userId) -> "Cancel Friend Request" to suspend {
+                    sentIds.contains(userId) -> res.getString(R.string.friend_cancel_request) to suspend {
                         friendApi.removeFriend(
                             userId
                         )
                     }
 
-                    else -> "Send Friend Request" to suspend {
+                    else -> res.getString(R.string.friend_send) to suspend {
                         friendApi.sendRequest(
                             FriendRequestAction(userId)
                         )

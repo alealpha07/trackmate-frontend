@@ -111,7 +111,8 @@ fun configurePostView(
         val likeResource =
             if (postLiked) R.drawable.baseline_thumb_up_alt_24 else R.drawable.baseline_thumb_up_off_alt_24
         view.findViewById<ImageButton>(R.id.like_button).setBackgroundResource(likeResource)
-        view.findViewById<TextView>(R.id.like_count).text = "$postLikeCount Likes"
+        view.findViewById<TextView>(R.id.like_count).text =
+            view.resources.getQuantityString(R.plurals.post_likes, postLikeCount, postLikeCount)
     }
 
     fun updateSaveState() {
@@ -215,9 +216,9 @@ fun sharePost(context: Context, post: PostItem) {
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
         putExtra(Intent.EXTRA_TITLE, post.title)
-        putExtra(Intent.EXTRA_TEXT, "${post.title} on TrackMate\n${sharedPostUrl(post.id)}")
+        putExtra(Intent.EXTRA_TEXT, context.getString(R.string.post_share_text, post.title, sharedPostUrl(post.id)))
     }
-    context.startActivity(Intent.createChooser(intent, "Share post"))
+    context.startActivity(Intent.createChooser(intent, context.getString(R.string.post_share)))
 }
 
 fun parseSharedPostId(uri: Uri?): Int? {

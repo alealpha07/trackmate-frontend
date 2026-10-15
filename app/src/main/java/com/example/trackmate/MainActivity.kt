@@ -30,6 +30,8 @@ import com.example.trackmate.map.configureTileCache
 import com.example.trackmate.navigate.TrackRecordingService
 import com.example.trackmate.track.TrackNavigationService
 import com.example.trackmate.util.Vehicle
+import com.example.trackmate.util.applySavedTheme
+import com.example.trackmate.util.currentLanguage
 import com.example.trackmate.posts.parseSharedPostId
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
@@ -48,7 +50,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import okhttp3.Cache
 import okhttp3.Interceptor
-import androidx.appcompat.app.AppCompatDelegate
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -120,6 +121,10 @@ class MainActivity : AppCompatActivity() {
             .build()
     }
 
+    private fun languageInterceptor() = Interceptor { chain ->
+        chain.proceed(chain.request().newBuilder().header("Accept-Language", currentLanguage().tag).build())
+    }
+
     private fun offlineCacheInterceptor() = Interceptor { chain ->
         var request = chain.request()
         if (!isNetworkAvailable()) {
@@ -131,6 +136,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // before super, so the first frame already has the right theme
+        applySavedTheme(this)
         super.onCreate(savedInstanceState)
 
         configureTileCache(this)
@@ -153,6 +160,7 @@ class MainActivity : AppCompatActivity() {
         val client = OkHttpClient.Builder()
             .cookieJar(cookieJar)
             .cache(cache)
+            .addInterceptor(languageInterceptor())
             .addInterceptor(offlineCacheInterceptor())
             .addNetworkInterceptor(onlineCacheInterceptor())
             .build()
@@ -183,8 +191,6 @@ class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
 
         val navView: BottomNavigationView = binding.navView
         val navController = findNavController(R.id.nav_host_fragment_activity_main)

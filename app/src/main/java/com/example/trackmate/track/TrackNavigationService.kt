@@ -159,13 +159,13 @@ class TrackNavigationService : Service() {
         manager.createNotificationChannel(
             NotificationChannel(
                 channelId,
-                "Track Navigation",
+                getString(R.string.navigation_channel),
                 NotificationManager.IMPORTANCE_LOW
-            ).apply { description = "Navigating route" })
+            ).apply { description = getString(R.string.navigation_channel_description) })
 
         val notification = NotificationCompat.Builder(this, channelId)
-            .setContentTitle("TrackMate")
-            .setContentText("Navigation in progress...")
+            .setContentTitle(getString(R.string.app_name))
+            .setContentText(getString(R.string.navigation_notification))
             .setSmallIcon(R.drawable.baseline_navigation_24)
             .setOngoing(true)
             .build()

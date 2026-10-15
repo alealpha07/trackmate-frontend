@@ -17,12 +17,12 @@
         android:src="@drawable/ic_info_24"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="@string/map_credit_info"
-        android:tint="#6b6e73" />
+        android:tint="@color/map_card_text_secondary" />
 
     <TextView
         android:id="@+id/txtMapCredit"
         android:text="@string/map_credit_full"
-        android:textColor="#4a4d52"
+        android:textColor="@color/map_credit_text"
         android:textSize="11sp"
         android:paddingVertical="3dp"
         android:layout_width="wrap_content"

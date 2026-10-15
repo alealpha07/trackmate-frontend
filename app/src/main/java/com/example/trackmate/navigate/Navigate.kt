@@ -171,13 +171,13 @@ class Navigate : Fragment() {
     private val trackFileSavedReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             showTrackNameDialog(
-                title = "Save Track",
-                message = "Do you want to save this track?",
+                title = getString(R.string.record_save_title),
+                message = getString(R.string.record_save_message),
                 vehicle = Vehicle.lastUsed(requireContext()),
                 vehicles = Vehicle.profile(requireContext()),
-                saveLabel = "Save",
-                cancelLabel = "Discard",
-                confirmCancel = "Discard this recording? It can't be recovered.",
+                saveLabel = getString(R.string.dialog_save),
+                cancelLabel = getString(R.string.dialog_discard),
+                confirmCancel = getString(R.string.record_discard_confirm),
                 onCancel = ::deleteRecordedFile
             ) { name, vehicle, done -> saveTrack(name, vehicle!!, done) }
         }
@@ -248,8 +248,7 @@ class Navigate : Fragment() {
         val appContext = requireContext().applicationContext
         val profileApi = (activity as MainActivity).profileService
         apiCallCoroutine.launch { Vehicle.loadProfile(appContext, profileApi) }
-        btnRecord.text =
-            if (TrackRecordingService.isRecording) "Stop Recording" else "Start Recording"
+        btnRecord.setText(if (TrackRecordingService.isRecording) R.string.record_stop else R.string.record_start)
         btnRecord.setOnClickListener {
             if (TrackRecordingService.isRecording) stopRecording() else startRecording()
         }
@@ -265,7 +264,7 @@ class Navigate : Fragment() {
     private fun setupMap(view: View) {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext())
         val mapStyle = getSavedMapStyle(requireContext())
-        mapView.setTileSource(tileSourceFor(mapStyle))
+        mapView.setTileSource(tileSourceFor(requireContext(), mapStyle))
         mapView.setMultiTouchControls(true)
         mapView.controller.setZoom(DEFAULT_MAP_ZOOM)
 
@@ -314,7 +313,7 @@ class Navigate : Fragment() {
         clearPolyline()
         stopIdleSpeedUpdates()
         TrackRecordingService.isRecording = true
-        btnRecord.text = "Stop Recording"
+        btnRecord.setText(R.string.record_stop)
         btnOpenLibrary.visibility = View.GONE
         btnPlanRoute.visibility = View.GONE
         compass.setActive(true)
@@ -327,7 +326,7 @@ class Navigate : Fragment() {
 
     private fun stopRecording() {
         TrackRecordingService.isRecording = false
-        btnRecord.text = "Start Recording"
+        btnRecord.setText(R.string.record_start)
         btnOpenLibrary.visibility = View.VISIBLE
         btnPlanRoute.visibility = View.VISIBLE
         compass.setActive(false)
@@ -341,7 +340,7 @@ class Navigate : Fragment() {
     private fun saveTrack(trackName: String, vehicle: Vehicle, done: (String?) -> Unit) {
         val file = File(requireContext().filesDir, "track.json")
         if (!file.exists()) {
-            done("No track file found")
+            done(getString(R.string.record_file_missing))
             return
         }
         val appContext = requireContext().applicationContext
@@ -391,16 +390,16 @@ class Navigate : Fragment() {
                     }
                     null
                 } else {
-                    travelResponse.errorBody()?.string() ?: "Error"
+                    travelResponse.errorBody()?.string() ?: appContext.getString(R.string.error_generic)
                 }
             } catch (e: Exception) {
                 Log.d("API-ERROR", e.stackTraceToString())
-                "The track is saved, but its travel couldn't be."
+                appContext.getString(R.string.record_travel_failed)
             }
             file.delete()
             withContext(Dispatchers.Main) {
                 done(null)
-                Toast.makeText(appContext, travelError ?: "Track saved successfully!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(appContext, travelError ?: appContext.getString(R.string.record_saved), Toast.LENGTH_SHORT).show()
             }
         }
     }

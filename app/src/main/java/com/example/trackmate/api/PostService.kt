@@ -43,87 +43,72 @@ interface PostService {
     @POST("post/image")
     suspend fun uploadPostImage(
         @Part file: MultipartBody.Part,
-        @Query("id") id: Int,
-        @Query("lang") lang: String = "en"
+        @Query("id") id: Int
     ): Response<ResponseBody>
 
     @GET("post/image")
     @Streaming
     suspend fun getPostImage(
         @Query("id") id: Int,
-        @Query("index") index: Int,
-        @Query("lang") lang: String = "en"
+        @Query("index") index: Int
     ): Response<ResponseBody>
 
     @POST("post")
     suspend fun createPost(
-        @Body data: PostRequest,
-        @Query("lang") lang: String = "en"
+        @Body data: PostRequest
     ): Response<PostId>
 
     @PUT("post")
     suspend fun editPost(
-        @Body data: PostRequest,
-        @Query("lang") lang: String = "en"
+        @Body data: PostRequest
     ): Response<ResponseBody>
 
     @DELETE("post")
     suspend fun deletePost(
-        @Query("id") id: Int,
-        @Query("lang") lang: String = "en"
+        @Query("id") id: Int
     ): Response<ResponseBody>
 
     @GET("post")
     suspend fun getPost(
-        @Query("id") id: Int,
-        @Query("lang") lang: String = "en"
+        @Query("id") id: Int
     ): Response<PostItem>
 
     @POST("post/like")
     suspend fun likePost(
-        @Body data: PostLikeSaveRequest,
-        @Query("lang") lang: String = "en"
+        @Body data: PostLikeSaveRequest
     ): Response<ResponseBody>
 
     @DELETE("post/like")
     suspend fun unLikePost(
-        @Query("id") id: Int,
-        @Query("lang") lang: String = "en"
+        @Query("id") id: Int
     ): Response<ResponseBody>
 
     @POST("post/save")
     suspend fun savePost(
-        @Body data: PostLikeSaveRequest,
-        @Query("lang") lang: String = "en"
+        @Body data: PostLikeSaveRequest
     ): Response<ResponseBody>
 
     @DELETE("post/save")
     suspend fun unSavePost(
-        @Query("id") id: Int,
-        @Query("lang") lang: String = "en"
+        @Query("id") id: Int
     ): Response<ResponseBody>
 
     @GET("post/user")
     suspend fun getUserPosts(
-        @Query("id") id: Int,
-        @Query("lang") lang: String = "en"
+        @Query("id") id: Int
     ): Response<List<PostItem>>
 
     @GET("post/friends")
     suspend fun getFriendsPosts(
-        @Query("offset") offset: Int,
-        @Query("lang") lang: String = "en"
+        @Query("offset") offset: Int
     ): Response<List<PostItem>>
 
     @GET("post/saved")
-    suspend fun getSavedPosts(
-        @Query("lang") lang: String = "en"
-    ): Response<List<PostItem>>
+    suspend fun getSavedPosts(): Response<List<PostItem>>
 
     @GET("post/trending")
     suspend fun getTrendingPosts(
-        @Query("offset") offset: Int,
-        @Query("lang") lang: String = "en"
+        @Query("offset") offset: Int
     ): Response<List<PostItem>>
 
 }

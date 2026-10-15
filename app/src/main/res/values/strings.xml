@@ -1,20 +1,14 @@
 <resources>
-    <string name="app_name">TrackMate</string>
+    <string name="app_name" translatable="false">TrackMate</string>
     <string name="title_home">Home</string>
-    <string name="title_dashboard">Dashboard</string>
     <string name="title_profile">Profile</string>
     <string name="title_search">Search</string>
     <string name="title_navigate">Navigate</string>
     <string name="title_scoreboard">Quests</string>
-    <string name="prompt_email">Email</string>
+    <string name="nav_navigation">Navigation</string>
+    <string name="nav_sign_in">TrackMate - Sign in</string>
+    <string name="nav_track_details">Track details</string>
     <string name="prompt_password">Password</string>
-    <string name="action_sign_in">Sign in or register</string>
-    <string name="action_sign_in_short">Sign in</string>
-    <string name="welcome">"Welcome!"</string>
-    <string name="invalid_username">Not a valid username</string>
-    <string name="invalid_password">Password must be >5 characters</string>
-    <string name="login_failed">"Login failed"</string>
-    <string name="hello_blank_fragment">Hello blank fragment</string>
     <!-- Track planner -->
     <string name="plan_title">Plan a track</string>
     <string name="plan_open">Plan route</string>
@@ -47,7 +41,7 @@
     <string name="plan_max_detour">Max. extra length</string>
     <string name="plan_max_detour_hint">How much longer the safest route may be than the shortest one. The filters are kept as far as they fit</string>
     <string name="plan_no_limit">No limit</string>
-    <string name="plan_percent">%1$d%%</string>
+    <string name="plan_percent" translatable="false">%1$d%%</string>
     <string name="plan_plan">Plan route</string>
     <string name="plan_planning">Planning…</string>
     <string name="plan_downloading">Downloading map data: %1$d of %2$d areas… new areas take a few seconds each.</string>
@@ -70,8 +64,8 @@
     <string name="plan_search_all">Search all places (slower) ↵</string>
     <string name="plan_searching_all">Searching all places…</string>
     <!-- Credits -->
-    <string name="map_credit">© Stadia Maps</string>
-    <string name="map_credit_full">© Stadia Maps © OpenMapTiles © OpenStreetMap contributors</string>
+    <string name="map_credit" translatable="false">© Stadia Maps</string>
+    <string name="map_credit_full" translatable="false">© Stadia Maps © OpenMapTiles © OpenStreetMap contributors</string>
     <string name="map_credit_info">Map credits</string>
     <string name="credits_title">Credits</string>
     <string name="credits_open">Credits and data licences</string>
@@ -81,7 +75,7 @@
     <string name="credits_routing">Routes, directions and search</string>
     <string name="credits_routing_body">Routes are planned on OpenStreetMap data read through the Overpass API (https://overpass-api.de), run by FOSSGIS e.V. Turn-by-turn directions come from Valhalla (https://github.com/valhalla/valhalla) on the FOSSGIS server. Place search uses Stadia Maps and Photon by komoot (https://photon.komoot.io).</string>
     <string name="credits_elevation">Elevation</string>
-    <string name="credits_elevation_body">Elevation data produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved.\n\nThe organisations in charge of the Copernicus programme by law or by delegation do not incur any liability for any use of the Copernicus WorldDEM-30.</string>
+    <string name="credits_elevation_body" translatable="false">Elevation data produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved.\n\nThe organisations in charge of the Copernicus programme by law or by delegation do not incur any liability for any use of the Copernicus WorldDEM-30.</string>
     <string name="credits_contact">Contact</string>
     <string name="credits_contact_body">Questions or problems with TrackMate: alealphatv@gmail.com</string>
     <!-- Vehicles -->
@@ -98,8 +92,8 @@
     <string name="navigate_start">Start</string>
     <string name="navigate_vehicle_missing">Add %1$s to your vehicles to navigate this track</string>
     <!-- Navigation banner -->
-    <string name="navigate_distance_km">%1$.1f km</string>
-    <string name="navigate_distance_m">%1$d m</string>
+    <string name="navigate_distance_km" translatable="false">%1$.1f km</string>
+    <string name="navigate_distance_m" translatable="false">%1$d m</string>
     <string name="directions_loading">Loading directions...</string>
     <string name="directions_unavailable">Directions unavailable - tap to retry</string>
     <string name="directions_back_to_track">Back to the track</string>
@@ -111,9 +105,9 @@
     <string name="voice_off_track">You are off the track. Head back to the track.</string>
     <string name="voice_missing">No %1$s voice installed, voice guidance is off</string>
     <!-- Ride stats -->
-    <string name="ride_stats_km">km</string>
+    <string name="ride_stats_km" translatable="false">km</string>
     <string name="ride_stats_time">time</string>
-    <string name="ride_stats_speed">km/h</string>
+    <string name="ride_stats_speed" translatable="false">km/h</string>
     <!-- Track name dialog -->
     <string name="track_name_missing">Enter a name for the track</string>
     <string name="track_save_failed">Couldn\'t save the track: check your connection and try again.</string>
@@ -151,4 +145,166 @@
     <!-- Open-source licences -->
     <string name="credits_licences">Open-source licences</string>
     <string name="credits_licences_body">TrackMate uses these open-source libraries under the Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0):\nosmdroid\nMPAndroidChart\nRetrofit, OkHttp and Moshi\nKotlin and kotlinx.coroutines\nAndroidX and Jetpack Media3\nMaterial Components for Android\nMaterial icons</string>
+    <!-- Settings: theme and language -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_system_default">System default</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_logout">Log out</string>
+    <string name="settings_value" translatable="false">%1$s: %2$s</string>
+    <!-- Map controls -->
+    <string name="map_style">Map style</string>
+    <string name="map_style_auto">Auto</string>
+    <string name="map_style_outdoors">Outdoors</string>
+    <string name="map_style_streets">Streets</string>
+    <string name="map_style_light">Light</string>
+    <string name="map_style_dark">Dark</string>
+    <string name="map_lock_north">Lock map to north</string>
+    <string name="map_my_location">Center on my location</string>
+    <string name="map_zoom_in">Zoom in</string>
+    <string name="map_zoom_out">Zoom out</string>
+    <string name="map_location_unavailable">Current location not available yet</string>
+    <string name="map_compass_locked">Map locked to north. Tap to follow the direction of travel</string>
+    <string name="map_compass_follow">Map follows the direction of travel. Tap to lock to north</string>
+    <string name="fullscreen_open">Open fullscreen</string>
+    <string name="fullscreen_exit">Exit fullscreen</string>
+    <string name="marker_start">Start</string>
+    <string name="marker_finish">Finish</string>
+    <!-- Login and register -->
+    <string name="auth_username">Username</string>
+    <string name="auth_confirm_password">Confirm password</string>
+    <string name="auth_login">Log in</string>
+    <string name="auth_register">Register</string>
+    <string name="auth_switch_to_register">No account? Register here</string>
+    <string name="auth_switch_to_login">Already have an account? Log in here</string>
+    <!-- Common -->
+    <string name="dialog_yes">Yes</string>
+    <string name="dialog_confirm">Confirm</string>
+    <string name="dialog_edit">Edit</string>
+    <string name="dialog_delete">Delete</string>
+    <string name="dialog_discard">Discard</string>
+    <string name="value_missing">N/A</string>
+    <string name="speed_kmh" translatable="false">%1$s km/h</string>
+    <string name="profile_picture">Profile picture</string>
+    <!-- Home and search -->
+    <string name="home_trending">Trending</string>
+    <string name="search_hint">Search users or posts…</string>
+    <!-- Posts -->
+    <plurals name="post_likes">
+        <item quantity="one">%1$d like</item>
+        <item quantity="other">%1$d likes</item>
+    </plurals>
+    <string name="post_picture">Post picture</string>
+    <string name="post_share">Share post</string>
+    <string name="post_share_text">%1$s on TrackMate\n%2$s</string>
+    <string name="post_view">View post</string>
+    <string name="post_unavailable">This post is no longer available</string>
+    <string name="post_new">New post</string>
+    <string name="post_create">Create post</string>
+    <string name="post_created">Post created!</string>
+    <string name="post_upload_images">Upload images</string>
+    <string name="post_choose_track">Choose track</string>
+    <string name="post_title_hint">Post title</string>
+    <string name="post_description_hint">Description</string>
+    <string name="post_image_failed">Couldn\'t upload an image</string>
+    <string name="post_edit_title">Edit post</string>
+    <string name="post_edit_message">Editing the post %1$s</string>
+    <string name="post_delete_title">Delete post</string>
+    <string name="post_delete_message">Do you really want to delete the post %1$s?</string>
+    <!-- Profile and friends -->
+    <string name="profile_level">Level %1$d</string>
+    <plurals name="profile_friends">
+        <item quantity="one">%1$d friend</item>
+        <item quantity="other">%1$d friends</item>
+    </plurals>
+    <string name="profile_km_travelled">%1$s km travelled</string>
+    <string name="profile_edit">Edit profile</string>
+    <string name="profile_view">View profile</string>
+    <string name="profile_bio">Bio</string>
+    <string name="profile_save">Save changes</string>
+    <string name="profile_updated">Profile updated</string>
+    <string name="profile_image_failed">Couldn\'t upload the image</string>
+    <string name="saved_posts">Saved posts</string>
+    <string name="travels_history">Travel history</string>
+    <string name="friends_title">Friends</string>
+    <string name="friend_requests">Friend requests</string>
+    <string name="friend_view">View</string>
+    <string name="friend_remove">Remove</string>
+    <string name="friend_accept">Accept friend request</string>
+    <string name="friend_refuse">Refuse friend request</string>
+    <string name="friend_send">Send friend request</string>
+    <string name="friend_cancel_request">Cancel friend request</string>
+    <string name="friend_remove_friend">Remove friend</string>
+    <!-- Quests -->
+    <string name="quests_current_level">Current level</string>
+    <string name="quests_current_level_value">Current level: %1$d</string>
+    <string name="quests_progress_next">Progress to the next level</string>
+    <string name="quest_collect">Collect</string>
+    <!-- Tracks and travels -->
+    <string name="saved_tracks">Saved tracks</string>
+    <string name="track_name_hint">Track name</string>
+    <string name="track_edit">Edit track</string>
+    <string name="track_delete">Delete track</string>
+    <string name="track_navigate_again">Navigate again</string>
+    <string name="track_edit_message">Editing the track %1$s</string>
+    <string name="track_delete_message">Do you really want to delete the track %1$s?</string>
+    <string name="track_updated">Track updated</string>
+    <string name="track_deleted">Track deleted</string>
+    <string name="track_best_time">Best time: %1$s</string>
+    <string name="track_max_speed">Max speed: %1$s</string>
+    <string name="track_best_avg_speed">Best avg speed: %1$s</string>
+    <string name="track_length">Length: %1$s km</string>
+    <string name="track_length_missing">Length: N/A</string>
+    <string name="track_more_details">More details</string>
+    <string name="travel_time">Time: %1$s</string>
+    <string name="travel_max_speed">Max speed: %1$s</string>
+    <string name="travel_avg_speed">Avg speed: %1$s</string>
+    <string name="travel_date">Date: %1$s</string>
+    <!-- Recording -->
+    <string name="record_start">Start recording</string>
+    <string name="record_stop">Stop recording</string>
+    <string name="record_save_title">Save track</string>
+    <string name="record_save_message">Do you want to save this track?</string>
+    <string name="record_discard_confirm">Discard this recording? It can\'t be recovered.</string>
+    <string name="record_file_missing">No track file found</string>
+    <string name="record_travel_failed">The track is saved, but its travel couldn\'t be.</string>
+    <string name="record_saved">Track saved</string>
+    <string name="record_channel">Track recording</string>
+    <string name="record_channel_description">Recording your route in the background</string>
+    <string name="record_notification">Recording in progress…</string>
+    <!-- Navigation -->
+    <string name="navigation_start">Start navigation</string>
+    <string name="navigation_cancel">Cancel navigation</string>
+    <string name="navigation_cancel_message">Do you want to stop? Your progress will be lost.</string>
+    <string name="navigation_completed">Navigation completed</string>
+    <string name="navigation_best_time">Your best time: %1$s</string>
+    <string name="navigation_best_avg_speed">Your best avg speed: %1$s</string>
+    <string name="navigation_best_speed">Your best speed: %1$s</string>
+    <string name="navigation_track_loading">The track isn\'t loaded yet</string>
+    <string name="navigation_no_location">Your current location isn\'t available</string>
+    <string name="navigation_too_far_title">Too far from the start</string>
+    <string name="navigation_too_far_message">You are %1$d meters from the start. Move within %2$d m of the start to begin navigation.</string>
+    <string name="navigation_no_travel">No travel data to save.</string>
+    <string name="navigation_travel_saved">Travel saved!</string>
+    <string name="navigation_travel_failed">Couldn\'t save the travel</string>
+    <string name="navigation_channel">Track navigation</string>
+    <string name="navigation_channel_description">Navigating a route</string>
+    <string name="navigation_notification">Navigation in progress…</string>
+    <!-- Travel graph -->
+    <string name="graph_travel_count">Your travels: %1$d</string>
+    <string name="graph_speed_comparison">Speed comparison</string>
+    <string name="graph_show_data_for">Show data for</string>
+    <string name="graph_performance">Performance over time</string>
+    <string name="graph_speed_map">Speed map</string>
+    <string name="graph_leaderboard">Leaderboard top 10</string>
+    <string name="graph_my_max_speed">My max speed</string>
+    <string name="graph_global_max_speed">Global max speed</string>
+    <string name="graph_my_avg_speed">My avg speed</string>
+    <string name="graph_global_avg_speed">Global avg speed</string>
+    <string name="graph_time">Time</string>
+    <string name="graph_unknown_user">User #%1$d</string>
+    <string name="graph_tag_owner">owner</string>
+    <string name="graph_tag_you">you</string>
 </resources>

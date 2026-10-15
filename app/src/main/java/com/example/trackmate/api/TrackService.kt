@@ -102,92 +102,77 @@ interface TrackService {
     @POST("track/file")
     suspend fun uploadTrack(
         @Part file: MultipartBody.Part,
-        @Query("id") id: Int,
-        @Query("lang") lang: String = "en"
+        @Query("id") id: Int
     ): Response<ResponseBody>
 
     @GET("track/file")
     @Streaming
     suspend fun getTrackFile(
-        @Query("id") id: Int,
-        @Query("lang") lang: String = "en"
+        @Query("id") id: Int
     ): Response<ResponseBody>
 
     @POST("track")
     suspend fun createTrack(
-        @Body data: NewTrackRequest,
-        @Query("lang") lang: String = "en"
+        @Body data: NewTrackRequest
     ): Response<TrackId>
 
     @PUT("track")
     suspend fun editTrack(
-        @Body data: EditTrackRequest,
-        @Query("lang") lang: String = "en"
+        @Body data: EditTrackRequest
     ): Response<ResponseBody>
 
     @DELETE("track")
     suspend fun deleteTrack(
-        @Query("id") id: Int,
-        @Query("lang") lang: String = "en"
+        @Query("id") id: Int
     ): Response<ResponseBody>
 
     @GET("track")
     suspend fun getTracks(
-        @Query("vehicle") vehicle: String? = null,
-        @Query("lang") lang: String = "en"
+        @Query("vehicle") vehicle: String? = null
     ): Response<List<TrackItem>>
 
     @GET("track/details")
     suspend fun getTrack(
         @Query("id") id: Int,
-        @Query("vehicle") vehicle: String? = null,
-        @Query("lang") lang: String = "en"
+        @Query("vehicle") vehicle: String? = null
     ): Response<TrackDetails>
 
     @POST("track/travel")
     suspend fun createTravel(
-        @Body data: NewTravelRequest,
-        @Query("lang") lang: String = "en"
+        @Body data: NewTravelRequest
     ): Response<TravelId>
 
     @Multipart
     @POST("track/travel/file")
     suspend fun uploadTravelFile(
         @Part file: MultipartBody.Part,
-        @Query("id") id: Int,
-        @Query("lang") lang: String = "en"
+        @Query("id") id: Int
     ): Response<ResponseBody>
 
     @GET("track/travel/file")
     @Streaming
     suspend fun getTravelFile(
-        @Query("id") id: Int,
-        @Query("lang") lang: String = "en"
+        @Query("id") id: Int
     ): Response<ResponseBody>
 
     @DELETE("track/travel")
     suspend fun deleteTravel(
-        @Query("id") id: Int,
-        @Query("lang") lang: String = "en"
+        @Query("id") id: Int
     ): Response<ResponseBody>
 
     @GET("track/travel")
-    suspend fun getTravels(
-        @Query("lang") lang: String = "en"
-    ): Response<List<TravelItem>>
+    suspend fun getTravels(): Response<List<TravelItem>>
 
     @GET("track/travel/details")
     suspend fun getTravelsByTrack(
         @Query("id") id: Int,
-        @Query("vehicle") vehicle: String? = null,
-        @Query("lang") lang: String = "en"
+        @Query("vehicle") vehicle: String? = null
     ): Response<List<TravelItem>>
 
     @GET("track/leaderboard")
     suspend fun getLeaderboard(
         @Query("id") id: Int,
-        @Query("vehicle") vehicle: String? = null,
-        @Query("lang") lang: String = "en"
+        @Query("vehicle") vehicle: String? = null
     ): Response<List<LeaderboardItem>>
 }
 

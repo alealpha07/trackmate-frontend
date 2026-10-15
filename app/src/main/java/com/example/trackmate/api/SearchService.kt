@@ -44,7 +44,6 @@ interface SearchService {
     @GET("search")
     suspend fun search(
         @Query("text") text: String,
-        @Query("sortBy") sortBy: String = "score",
-        @Query("lang") lang: String = "en"
+        @Query("sortBy") sortBy: String = "score"
     ): Response<List<SearchItem>>
 }

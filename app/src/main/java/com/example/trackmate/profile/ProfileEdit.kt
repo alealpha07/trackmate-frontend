@@ -127,7 +127,7 @@ class ProfileEdit : Fragment() {
                         if (!uploadResponse.isSuccessful) {
                             withContext(Dispatchers.Main) {
                                 val errorMsg =
-                                    uploadResponse.errorBody()?.string() ?: "Image upload failed"
+                                    uploadResponse.errorBody()?.string() ?: getString(R.string.profile_image_failed)
                                 Toast.makeText(requireContext(), errorMsg, Toast.LENGTH_SHORT)
                                     .show()
                             }
@@ -145,12 +145,12 @@ class ProfileEdit : Fragment() {
                         if (response.isSuccessful) {
                             Toast.makeText(
                                 requireContext(),
-                                "Profile updated successfully",
+                                R.string.profile_updated,
                                 Toast.LENGTH_SHORT
                             ).show()
                             findNavController().popBackStack()
                         } else {
-                            val errorMsg = response.errorBody()?.string() ?: "Update failed"
+                            val errorMsg = response.errorBody()?.string() ?: getString(R.string.error_generic)
                             Toast.makeText(requireContext(), errorMsg, Toast.LENGTH_SHORT).show()
                         }
                     }

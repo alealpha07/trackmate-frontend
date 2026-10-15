@@ -143,14 +143,14 @@ class CreatePost : Fragment() {
                         withContext(Dispatchers.Main) {
                             if (!uploadResponse.isSuccessful) {
                                 val errorMsg = uploadResponse.errorBody()?.string()
-                                    ?: "Failed to upload an image"
+                                    ?: getString(R.string.post_image_failed)
                                 Log.d("API-ERROR", "Image upload failed (${uploadResponse.code()}): $errorMsg")
                                 Toast.makeText(requireContext(), errorMsg, Toast.LENGTH_SHORT).show()
                             }
                         }
                     }
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(requireContext(), "Post created!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), R.string.post_created, Toast.LENGTH_SHORT).show()
                         requireActivity().supportFragmentManager.popBackStack()
                     }
                 } else {

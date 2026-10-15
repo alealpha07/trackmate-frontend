@@ -123,7 +123,7 @@ class Quests : Fragment() {
                 if (userResponse.isSuccessful && userResponse.body() != null) {
                     withContext(Dispatchers.Main) {
                         val user = userResponse.body()!!
-                        levelTitle.text = "Current Level: ${user.level}"
+                        levelTitle.text = getString(R.string.quests_current_level_value, user.level)
                         levelProgressBar.progress = user.experience
                         levelProgressBar.max = maxExpPerLevel
 

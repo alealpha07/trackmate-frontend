@@ -20,7 +20,7 @@
             android:id="@+id/txtTrackName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Track Name"
+            tools:text="Track Name"
             android:textSize="20sp"
             android:textStyle="bold"
             android:gravity="center"
@@ -46,7 +46,7 @@
             android:id="@+id/txtTrackLength"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Length: -- km"
+            tools:text="Length: -- km"
             android:textSize="16sp"
             android:textStyle="bold"
             app:layout_constraintTop_toBottomOf="@id/txtTrackVehicle"
@@ -58,7 +58,7 @@
             android:id="@+id/txtUserTravelCount"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Your Travels: --"
+            tools:text="Your Travels: --"
             android:textSize="16sp"
             android:textStyle="bold"
             app:layout_constraintBaseline_toBaselineOf="@id/txtTrackLength"
@@ -78,7 +78,7 @@
             android:id="@+id/title_distribution"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Speed Comparison"
+            android:text="@string/graph_speed_comparison"
             android:textSize="16sp"
             android:textStyle="bold"
             app:layout_constraintTop_toBottomOf="@id/vehicleChips"
@@ -98,7 +98,7 @@
             android:id="@+id/title_user_filter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Show data for"
+            android:text="@string/graph_show_data_for"
             android:textSize="16sp"
             android:textStyle="bold"
             app:layout_constraintTop_toBottomOf="@id/barChart"
@@ -121,7 +121,7 @@
             android:id="@+id/title_performance"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Performance over Time"
+            android:text="@string/graph_performance"
             android:textSize="16sp"
             android:textStyle="bold"
             app:layout_constraintTop_toBottomOf="@id/spinnerUsers"
@@ -141,7 +141,7 @@
             android:id="@+id/title_speed_map"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Speed Map"
+            android:text="@string/graph_speed_map"
             android:textSize="16sp"
             android:textStyle="bold"
             app:layout_constraintTop_toBottomOf="@id/performanceChart"
@@ -201,34 +201,34 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="12dp"
-                            android:contentDescription="Open fullscreen"
+                            android:contentDescription="@string/fullscreen_open"
                             app:fabSize="mini"
                             app:srcCompat="@drawable/ic_fullscreen_24"
-                            app:tint="@android:color/black"
-                            app:backgroundTint="@android:color/white" />
+                            app:tint="@color/map_control_icon"
+                            app:backgroundTint="@color/map_control" />
 
                         <com.google.android.material.floatingactionbutton.FloatingActionButton
                             android:id="@+id/btnSpeedMapZoomIn"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="2dp"
-                            android:contentDescription="Zoom in"
+                            android:contentDescription="@string/map_zoom_in"
                             android:visibility="gone"
                             app:fabSize="mini"
                             app:srcCompat="@drawable/ic_add_24"
-                            app:tint="@android:color/black"
-                            app:backgroundTint="@android:color/white" />
+                            app:tint="@color/map_control_icon"
+                            app:backgroundTint="@color/map_control" />
 
                         <com.google.android.material.floatingactionbutton.FloatingActionButton
                             android:id="@+id/btnSpeedMapZoomOut"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:contentDescription="Zoom out"
+                            android:contentDescription="@string/map_zoom_out"
                             android:visibility="gone"
                             app:fabSize="mini"
                             app:srcCompat="@drawable/ic_remove_24"
-                            app:tint="@android:color/black"
-                            app:backgroundTint="@android:color/white" />
+                            app:tint="@color/map_control_icon"
+                            app:backgroundTint="@color/map_control" />
 
                     </LinearLayout>
 
@@ -252,7 +252,7 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:gravity="start"
-                        android:text="-- km/h"
+                        tools:text="-- km/h"
                         android:textSize="12sp" />
 
                     <TextView
@@ -261,7 +261,7 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:gravity="center"
-                        android:text="-- km/h"
+                        tools:text="-- km/h"
                         android:textSize="12sp" />
 
                     <TextView
@@ -270,7 +270,7 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:gravity="center"
-                        android:text="-- km/h"
+                        tools:text="-- km/h"
                         android:textSize="12sp" />
 
                     <TextView
@@ -279,7 +279,7 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:gravity="end"
-                        android:text="-- km/h"
+                        tools:text="-- km/h"
                         android:textSize="12sp" />
 
                 </LinearLayout>
@@ -292,7 +292,7 @@
             android:id="@+id/title_leaderboard"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Leaderboard Top 10"
+            android:text="@string/graph_leaderboard"
             android:textSize="16sp"
             android:textStyle="bold"
             app:layout_constraintTop_toBottomOf="@id/speedMapSlot"

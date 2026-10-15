@@ -24,7 +24,7 @@
             android:layout_height="wrap_content"
             android:inputType="textCapWords"
             android:singleLine="true"
-            android:hint="Post Title" />
+            android:hint="@string/post_title_hint" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -41,7 +41,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="textCapSentences|textMultiLine"
-            android:hint="Post Description" />
+            android:hint="@string/post_description_hint" />
     </com.google.android.material.textfield.TextInputLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

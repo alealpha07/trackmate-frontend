@@ -248,7 +248,7 @@ class TrackPlanner : Fragment() {
     // #region map
     private fun setupMap(view: View) {
         val context = requireContext()
-        mapView.setTileSource(tileSourceFor(getSavedMapStyle(context)))
+        mapView.setTileSource(tileSourceFor(context, getSavedMapStyle(context)))
         mapView.setMultiTouchControls(true)
         mapView.controller.setZoom(mapZoom)
         mapView.controller.setCenter(mapCenter ?: DEFAULT_CENTER)
@@ -1121,9 +1121,9 @@ private fun haversineMeters(a: PlanPoint, b: PlanPoint): Double {
     return 2 * EARTH_RADIUS_METERS * asin(sqrt(h))
 }
 
-// like the web's Intl.NumberFormat("en")
+// like the web's Intl.NumberFormat
 private fun formatNumber(value: Double, minDecimals: Int): String =
-    DecimalFormat(if (minDecimals == 1) "#,##0.0" else "#,##0.#", DecimalFormatSymbols(Locale.ENGLISH))
+    DecimalFormat(if (minDecimals == 1) "#,##0.0" else "#,##0.#", DecimalFormatSymbols.getInstance())
         .apply { roundingMode = RoundingMode.HALF_UP }
         .format(value)
 

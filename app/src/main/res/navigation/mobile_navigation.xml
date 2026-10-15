@@ -8,7 +8,7 @@
     <fragment
         android:id="@+id/home"
         android:name="com.example.trackmate.home.Home"
-        android:label="Home"
+        android:label="@string/title_home"
         tools:layout="@layout/fragment_home" >
         <action
             android:id="@+id/action_home_to_userProfile"
@@ -20,7 +20,7 @@
     <fragment
         android:id="@+id/search"
         android:name="com.example.trackmate.search.Search"
-        android:label="Search"
+        android:label="@string/title_search"
         tools:layout="@layout/fragment_search" >
         <action
             android:id="@+id/action_search_to_userProfile2"
@@ -32,7 +32,7 @@
     <fragment
         android:id="@+id/navigate"
         android:name="com.example.trackmate.navigate.Navigate"
-        android:label="Navigation"
+        android:label="@string/title_navigate"
         tools:layout="@layout/fragment_navigate" >
         <action
             android:id="@+id/action_navigate_to_trackNavigation"
@@ -41,12 +41,12 @@
     <fragment
         android:id="@+id/quests"
         android:name="com.example.trackmate.quests.Quests"
-        android:label="Quests"
+        android:label="@string/title_scoreboard"
         tools:layout="@layout/fragment_quests" />
     <fragment
         android:id="@+id/profile"
         android:name="com.example.trackmate.profile.Profile"
-        android:label="Profile"
+        android:label="@string/title_profile"
         tools:layout="@layout/fragment_profile" >
         <action
             android:id="@+id/action_profile_to_trackNavigation"
@@ -55,7 +55,7 @@
     <fragment
         android:id="@+id/trackNavigation"
         android:name="com.example.trackmate.track.TrackNavigation"
-        android:label="Navigation"
+        android:label="@string/nav_navigation"
         tools:layout="@layout/fragment_track_navigation" >
         <argument
             android:name="trackId"
@@ -68,7 +68,7 @@
     <fragment
         android:id="@+id/savedTracks"
         android:name="com.example.trackmate.navigate.SavedTracks"
-        android:label="Saved Tracks"
+        android:label="@string/saved_tracks"
         tools:layout="@layout/fragment_saved_tracks" >
         <action
             android:id="@+id/action_savedTracks_to_trackNavigation"
@@ -86,12 +86,12 @@
     <fragment
         android:id="@+id/loginRegister"
         android:name="com.example.trackmate.LoginRegister"
-        android:label="Track Mate - Sign In"
+        android:label="@string/nav_sign_in"
         tools:layout="@layout/fragment_login_register" />
     <fragment
         android:id="@+id/settings"
         android:name="com.example.trackmate.profile.Settings"
-        android:label="Settings"
+        android:label="@string/settings_title"
         tools:layout="@layout/fragment_settings" />
     <fragment
         android:id="@+id/credits"
@@ -101,12 +101,12 @@
     <fragment
         android:id="@+id/profileEdit"
         android:name="com.example.trackmate.profile.ProfileEdit"
-        android:label="Edit Profile"
+        android:label="@string/profile_edit"
         tools:layout="@layout/fragment_profile_edit" />
     <fragment
         android:id="@+id/userProfile"
         android:name="com.example.trackmate.profile.UserProfile"
-        android:label="Profile"
+        android:label="@string/title_profile"
         tools:layout="@layout/fragment_user_profile">
         <argument
             android:name="id"
@@ -118,7 +118,7 @@
     <fragment
         android:id="@+id/friends"
         android:name="com.example.trackmate.profile.Friends"
-        android:label="Friends"
+        android:label="@string/friends_title"
         tools:layout="@layout/fragment_friends">
         <action
             android:id="@+id/action_friends_to_userProfile"
@@ -127,12 +127,12 @@
     <fragment
         android:id="@+id/createPost"
         android:name="com.example.trackmate.profile.CreatePost"
-        android:label="New Post"
+        android:label="@string/post_new"
         tools:layout="@layout/fragment_create_post" />
     <fragment
         android:id="@+id/bookmarks"
         android:name="com.example.trackmate.profile.Bookmarks"
-        android:label="Saved Posts"
+        android:label="@string/saved_posts"
         tools:layout="@layout/fragment_bookmarks" >
         <action
             android:id="@+id/action_bookmarks_to_userProfile"
@@ -144,7 +144,7 @@
     <fragment
         android:id="@+id/travels"
         android:name="com.example.trackmate.profile.Travels"
-        android:label="Travels History"
+        android:label="@string/travels_history"
         tools:layout="@layout/fragment_travels">
         <action
             android:id="@+id/action_travels_to_trackNavigation"
@@ -153,7 +153,7 @@
     <fragment
         android:id="@+id/travelGraph"
         android:name="com.example.trackmate.track.TravelGraph"
-        android:label="Track Details"
+        android:label="@string/nav_track_details"
         tools:layout="@layout/fragment_travel_graph">
         <argument
             android:name="trackId"

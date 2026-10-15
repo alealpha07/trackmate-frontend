@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -18,7 +19,7 @@
         android:id="@+id/txtTrackName"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Track Name"
+        tools:text="Track Name"
         android:textSize="18sp"
         android:textStyle="bold"
         app:layout_constraintTop_toTopOf="parent"
@@ -33,7 +34,7 @@
         android:layout_marginEnd="8dp"
         android:background="@drawable/circle_outline_secondary"
         android:foreground="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Delete track"
+        android:contentDescription="@string/track_delete"
         android:padding="8dp"
         android:scaleType="centerInside"
         android:src="@drawable/ic_delete_24"
@@ -49,7 +50,7 @@
         android:layout_marginEnd="8dp"
         android:background="@drawable/circle_outline_primary"
         android:foreground="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Edit track"
+        android:contentDescription="@string/track_edit"
         android:padding="8dp"
         android:scaleType="centerInside"
         android:src="@drawable/ic_edit_24"
@@ -63,7 +64,7 @@
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:backgroundTint="@color/primary_700"
-        android:contentDescription="Renavigate"
+        android:contentDescription="@string/track_navigate_again"
         android:padding="8dp"
         android:scaleType="centerInside"
         android:src="@drawable/baseline_navigation_24_white"
@@ -74,7 +75,7 @@
         android:id="@+id/txtBestTime"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Best Time: 00:00"
+        tools:text="Best Time: 00:00"
         app:layout_constraintTop_toBottomOf="@id/txtTrackName"
         app:layout_constraintStart_toStartOf="parent" />
 
@@ -82,7 +83,7 @@
         android:id="@+id/txtMaxSpeed"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Max Speed: 00 km/h"
+        tools:text="Max Speed: 00 km/h"
         app:layout_constraintTop_toBottomOf="@id/txtBestTime"
         app:layout_constraintStart_toStartOf="parent" />
 
@@ -90,7 +91,7 @@
         android:id="@+id/txtBestAvgSpeed"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Best Avg Speed: 00 km/h"
+        tools:text="Best Avg Speed: 00 km/h"
         app:layout_constraintTop_toBottomOf="@id/txtMaxSpeed"
         app:layout_constraintStart_toStartOf="parent" />
 

@@ -72,55 +72,55 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-            android:contentDescription="Lock map to north"
+            android:contentDescription="@string/map_lock_north"
             android:visibility="gone"
             app:fabSize="mini"
             app:srcCompat="@drawable/ic_compass_needle_24"
             app:tint="@null"
-            app:backgroundTint="@android:color/white" />
+            app:backgroundTint="@color/map_control" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/btnLayers"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-            android:contentDescription="Change map style"
+            android:contentDescription="@string/map_style"
             app:fabSize="mini"
             app:srcCompat="@drawable/ic_layers_24"
-            app:tint="@android:color/black"
-            app:backgroundTint="@android:color/white" />
+            app:tint="@color/map_control_icon"
+            app:backgroundTint="@color/map_control" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/btnMyLocation"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-            android:contentDescription="Center on my location"
+            android:contentDescription="@string/map_my_location"
             app:fabSize="mini"
             app:srcCompat="@drawable/ic_my_location_24"
-            app:tint="@android:color/black"
-            app:backgroundTint="@android:color/white" />
+            app:tint="@color/map_control_icon"
+            app:backgroundTint="@color/map_control" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/btnZoomIn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="2dp"
-            android:contentDescription="Zoom in"
+            android:contentDescription="@string/map_zoom_in"
             app:fabSize="mini"
             app:srcCompat="@drawable/ic_add_24"
-            app:tint="@android:color/black"
-            app:backgroundTint="@android:color/white" />
+            app:tint="@color/map_control_icon"
+            app:backgroundTint="@color/map_control" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/btnZoomOut"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:contentDescription="Zoom out"
+            android:contentDescription="@string/map_zoom_out"
             app:fabSize="mini"
             app:srcCompat="@drawable/ic_remove_24"
-            app:tint="@android:color/black"
-            app:backgroundTint="@android:color/white" />
+            app:tint="@color/map_control_icon"
+            app:backgroundTint="@color/map_control" />
 
     </LinearLayout>
 
@@ -128,7 +128,7 @@
         android:id="@+id/statsLayout"
         android:orientation="vertical"
         android:padding="16dp"
-        android:background="#BBFFFFFF"
+        android:background="@color/map_overlay"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toTopOf="@id/btnRecord"
@@ -137,7 +137,7 @@
 
         <TextView
             android:id="@+id/txtTrackName"
-            android:text="Track Name"
+            tools:text="Track Name"
             android:textSize="20sp"
             android:textStyle="bold"
             android:layout_height="wrap_content"
@@ -156,35 +156,35 @@
         <TextView
             android:id="@+id/txtVehicleMissing"
             android:textSize="16sp"
-            android:textColor="@android:color/holo_red_dark"
+            android:textColor="@color/danger"
             android:visibility="gone"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"/>
 
         <TextView
             android:id="@+id/txtTrackLength"
-            android:text="Length: 0.00 km"
+            tools:text="Length: 0.00 km"
             android:textSize="16sp"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"/>
 
         <TextView
             android:id="@+id/txtUserBest"
-            android:text="Your Best: -"
+            tools:text="Your Best: -"
             android:textSize="16sp"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content" />
 
         <TextView
             android:id="@+id/txtUserBestAvg"
-            android:text="Your Best Average Speed: -"
+            tools:text="Your Best Average Speed: -"
             android:textSize="16sp"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content" />
 
         <TextView
             android:id="@+id/txtUserBestSpd"
-            android:text="Your Best Speed: -"
+            tools:text="Your Best Speed: -"
             android:textSize="16sp"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content" />
@@ -193,9 +193,9 @@
             android:id="@+id/btnMoreDetails"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:text="More Details"
+            android:text="@string/track_more_details"
             android:layout_marginTop="16dp"
-            android:backgroundTint="@color/cardview_light_background"
+            android:backgroundTint="@color/map_control"
             style="?attr/materialButtonOutlinedStyle"/>
 
     </LinearLayout>
@@ -204,7 +204,7 @@
         android:id="@+id/btnRecord"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Start Navigation"
+        android:text="@string/navigation_start"
         app:layout_constraintBottom_toTopOf="@id/mapCredit"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

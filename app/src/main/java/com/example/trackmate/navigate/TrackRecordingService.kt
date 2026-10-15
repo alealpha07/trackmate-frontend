@@ -86,18 +86,18 @@ class TrackRecordingService : Service() {
         val channelId = "track_recording_channel"
         val channel = NotificationChannel(
             channelId,
-            "Track Recording",
+            getString(R.string.record_channel),
             NotificationManager.IMPORTANCE_LOW
         ).apply {
-            description = "Recording your route in background"
+            description = getString(R.string.record_channel_description)
         }
 
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.createNotificationChannel(channel)
 
         val notification = NotificationCompat.Builder(this, channelId)
-            .setContentTitle("TrackMate")
-            .setContentText("Recording in progress...")
+            .setContentTitle(getString(R.string.app_name))
+            .setContentText(getString(R.string.record_notification))
             .setSmallIcon(android.R.drawable.ic_menu_mylocation)
             .setOngoing(true)
             .build()

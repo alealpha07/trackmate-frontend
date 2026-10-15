@@ -8,4 +8,26 @@
 
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- light here, dark in values-night -->
+    <color name="map_control">#FFFFFFFF</color>
+    <color name="map_control_icon">#FF000000</color>
+    <color name="map_control_active">#FFEDE7F6</color>
+    <color name="map_overlay">#BBFFFFFF</color>
+    <color name="map_card">#F2FFFFFF</color>
+    <color name="map_card_text">#FF2B2D30</color>
+    <color name="map_card_text_secondary">#FF6B6E73</color>
+    <color name="map_credit">#B3FFFFFF</color>
+    <color name="map_credit_text">#FF4A4D52</color>
+    <color name="icon">#FF000000</color>
+    <color name="text_secondary">#FF757575</color>
+    <color name="divider">#FFE0E0E0</color>
+    <color name="placeholder">#FFE3E3E3</color>
+    <color name="danger">#FFCC0000</color>
+    <color name="sheet_handle">#FFBDBDBD</color>
+    <color name="level_circle">#FFE0E0E0</color>
+    <color name="level_circle_next">#FFCCCCCC</color>
+    <color name="speed_slowest">#FF000000</color>
+    <color name="chart_line">#FF0000FF</color>
+    <color name="logo_background">#00FFFFFF</color>
 </resources>

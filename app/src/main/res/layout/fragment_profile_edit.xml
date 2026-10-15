@@ -19,7 +19,7 @@
         android:scaleType="centerCrop"
         android:src="@drawable/baseline_person_24"
     android:background="@drawable/circle_background"
-    android:contentDescription="Profile Image"
+    android:contentDescription="@string/profile_picture"
     app:layout_constraintTop_toTopOf="parent"
     app:layout_constraintStart_toStartOf="parent"
     app:layout_constraintEnd_toEndOf="parent" />
@@ -55,7 +55,7 @@
         android:id="@+id/etBio"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:hint="Bio"
+        android:hint="@string/profile_bio"
         android:inputType="textMultiLine"
         android:gravity="top"
         android:minLines="3"
@@ -101,7 +101,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="Save Changes"
+        android:text="@string/profile_save"
         app:layout_constraintTop_toBottomOf="@id/vehicleChecks"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />

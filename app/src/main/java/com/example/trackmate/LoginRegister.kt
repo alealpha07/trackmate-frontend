@@ -94,12 +94,8 @@ class LoginRegister : Fragment() {
 
     private fun updateUIForMode() {
         etConfirmPassword.visibility = if (isRegisterMode) View.VISIBLE else View.GONE
-        btnSubmit.text = if (isRegisterMode) "Register" else "Login"
-        tvToggleMode.text = if (isRegisterMode) {
-            "Already have an account? Login here"
-        } else {
-            "No account? Register here"
-        }
+        btnSubmit.setText(if (isRegisterMode) R.string.auth_register else R.string.auth_login)
+        tvToggleMode.setText(if (isRegisterMode) R.string.auth_switch_to_login else R.string.auth_switch_to_register)
     }
 
     private fun loginUser(username: String, password: String, justRegistered: Boolean = false) {

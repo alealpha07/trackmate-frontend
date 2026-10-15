@@ -10,7 +10,7 @@
         android:id="@+id/searchEditText"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:hint="Search users or posts..."
+        android:hint="@string/search_hint"
         android:padding="12dp"
         android:background="@android:drawable/edit_text"
         android:imeOptions="actionSearch"

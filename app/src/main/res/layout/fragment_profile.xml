@@ -9,7 +9,7 @@
         android:id="@+id/username"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="User"
+        tools:text="User"
         android:textStyle="bold"
         android:textSize="18sp"
         app:layout_constraintStart_toStartOf="parent"
@@ -19,12 +19,12 @@
 
     <ImageButton
         android:id="@+id/settingsButton"
-        android:contentDescription="Settings"
+        android:contentDescription="@string/settings_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:src="@drawable/baseline_settings_24"
         android:background="?attr/selectableItemBackgroundBorderless"
-        app:tint="#757575"
+        app:tint="@color/text_secondary"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         android:padding="8dp" />
@@ -32,11 +32,11 @@
     <ImageButton
         android:id="@+id/savedButton"
         android:layout_width="wrap_content"
-        android:contentDescription="Saved Posts"
+        android:contentDescription="@string/saved_posts"
         android:layout_height="wrap_content"
         android:src="@drawable/baseline_bookmark_24"
         android:background="?attr/selectableItemBackgroundBorderless"
-        app:tint="#757575"
+        app:tint="@color/text_secondary"
         app:layout_constraintEnd_toStartOf="@id/settingsButton"
         app:layout_constraintTop_toTopOf="parent"
         android:padding="8dp" />
@@ -44,11 +44,11 @@
     <ImageButton
         android:id="@+id/travelsButton"
         android:layout_width="wrap_content"
-        android:contentDescription="Travels History"
+        android:contentDescription="@string/travels_history"
         android:layout_height="wrap_content"
         android:src="@drawable/baseline_history_24"
         android:background="?attr/selectableItemBackgroundBorderless"
-        app:tint="#757575"
+        app:tint="@color/text_secondary"
         app:layout_constraintEnd_toStartOf="@id/savedButton"
         app:layout_constraintTop_toTopOf="parent"
         android:padding="8dp" />
@@ -126,19 +126,19 @@
                 android:id="@+id/editProfileButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="Edit Profile"
+                android:text="@string/profile_edit"
                 app:layout_constraintTop_toBottomOf="@id/bio"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 android:layout_marginTop="8dp"
-                android:backgroundTint="@color/cardview_light_background"
+                android:backgroundTint="?attr/colorSurface"
                 style="?attr/materialButtonOutlinedStyle"/>
 
             <View
                 android:id="@+id/divider"
                 android:layout_width="0dp"
                 android:layout_height="1dp"
-                android:background="@color/material_dynamic_neutral_variant80"
+                android:background="@color/placeholder"
                 app:layout_constraintTop_toBottomOf="@id/editProfileButton"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
@@ -163,7 +163,7 @@
         android:id="@+id/newPostButton"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="New Post"
+        android:text="@string/post_new"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

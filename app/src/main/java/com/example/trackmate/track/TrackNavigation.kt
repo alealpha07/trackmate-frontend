@@ -63,6 +63,7 @@ import com.example.trackmate.util.locationGranted
 import com.example.trackmate.util.requestLocationWithRationale
 import java.io.File
 import java.io.FileOutputStream
+import kotlin.math.roundToInt
 
 class TrackNavigation : Fragment() {
 
@@ -320,8 +321,9 @@ class TrackNavigation : Fragment() {
 
         setupMap(view)
 
-        btnRecord.text =
-            if (TrackNavigationService.isNavigating) "Cancel Navigation" else "Start Navigation"
+        btnRecord.setText(
+            if (TrackNavigationService.isNavigating) R.string.navigation_cancel else R.string.navigation_start
+        )
         btnRecord.setOnClickListener { if (TrackNavigationService.isNavigating) stopNavigation() else startNavigation() }
         btnMoreDetails.setOnClickListener{
             val action = TrackNavigationDirections.actionTrackNavigationToTravelGraph(args.trackId)
@@ -335,7 +337,7 @@ class TrackNavigation : Fragment() {
         // keep overlays when the view is detached by forceMapViewRebind
         mapView.setDestroyMode(false)
         val mapStyle = getSavedMapStyle(requireContext())
-        mapView.setTileSource(tileSourceFor(mapStyle))
+        mapView.setTileSource(tileSourceFor(requireContext(), mapStyle))
         mapView.setMultiTouchControls(true)
         mapView.controller.setZoom(DEFAULT_MAP_ZOOM)
         followZoom = FollowZoom(mapView)
@@ -450,7 +452,7 @@ class TrackNavigation : Fragment() {
                 travelVehicle = buttons.entries.first { it.value == toggle.checkedButtonId }.key
                 onChosen()
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton(R.string.dialog_cancel, null)
             .show()
     }
 
@@ -461,9 +463,10 @@ class TrackNavigation : Fragment() {
     }
 
     private fun showBest(best: TravelStatistics?) {
-        txtUserBest.text = "Your Best Time: ${best?.let { formatTime(it.time) } ?: "-"}"
-        txtUserBestAvg.text = "Your Best Avg Speed: ${best?.let { "${it.averageSpeed} km/h" } ?: "-"}"
-        txtUserBestSpd.text = "Your Best Speed: ${best?.let { "${it.maxSpeed} km/h" } ?: "-"}"
+        val speed = { value: Float -> getString(R.string.speed_kmh, "%.2f".format(value)) }
+        txtUserBest.text = getString(R.string.navigation_best_time, best?.let { formatTime(it.time) } ?: "-")
+        txtUserBestAvg.text = getString(R.string.navigation_best_avg_speed, best?.let { speed(it.averageSpeed) } ?: "-")
+        txtUserBestSpd.text = getString(R.string.navigation_best_speed, best?.let { speed(it.maxSpeed) } ?: "-")
     }
 
     private fun setupTrackOnMap(points: List<GeoPoint>) {
@@ -491,7 +494,7 @@ class TrackNavigation : Fragment() {
 
         val startMarker = Marker(mapView).apply {
             position = points.first()
-            title = "Start"
+            title = getString(R.string.marker_start)
             icon = createLetterMarkerIcon(requireContext(), 'A')
             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
         }
@@ -499,7 +502,7 @@ class TrackNavigation : Fragment() {
 
         val finishMarker = Marker(mapView).apply {
             position = points.last()
-            title = "Finish"
+            title = getString(R.string.marker_finish)
             icon = createLetterMarkerIcon(requireContext(), 'B')
             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
         }
@@ -526,7 +529,7 @@ class TrackNavigation : Fragment() {
             )
             distance += results[0]
         }
-        txtTrackLength.text = "Length: %.2f km".format(distance / 1000)
+        txtTrackLength.text = getString(R.string.track_length, "%.2f".format(distance / 1000))
         updateStartButton()
     }
 
@@ -550,7 +553,7 @@ class TrackNavigation : Fragment() {
             }
             else{
                 statsLayout.visibility = View.GONE
-                btnRecord.text = "Cancel Navigation"
+                btnRecord.setText(R.string.navigation_cancel)
                 followZoom.reset()
                 needsBearingSnap = true
                 isNavigatingUiActive = true
@@ -592,7 +595,7 @@ class TrackNavigation : Fragment() {
 
     private fun startNavigation() {
         if (referencePoints.isEmpty()) {
-            Toast.makeText(requireContext(), "Reference track not loaded yet", Toast.LENGTH_SHORT)
+            Toast.makeText(requireContext(), R.string.navigation_track_loading, Toast.LENGTH_SHORT)
                 .show()
             return
         }
@@ -606,7 +609,7 @@ class TrackNavigation : Fragment() {
             if (location == null) {
                 Toast.makeText(
                     requireContext(),
-                    "Unable to get current location",
+                    R.string.navigation_no_location,
                     Toast.LENGTH_SHORT
                 ).show()
                 return@addOnSuccessListener
@@ -623,9 +626,9 @@ class TrackNavigation : Fragment() {
             val dist = distArray[0]
             if (dist > OFF_TRACK_THRESHOLD) {
                 AlertDialog.Builder(requireContext())
-                    .setTitle("Too far from start")
-                    .setMessage("You are ${dist} meters away from the start. Move closer to the start (within ${OFF_TRACK_THRESHOLD} m) to begin navigation.")
-                    .setPositiveButton("OK", null)
+                    .setTitle(R.string.navigation_too_far_title)
+                    .setMessage(getString(R.string.navigation_too_far_message, dist.roundToInt(), OFF_TRACK_THRESHOLD.roundToInt()))
+                    .setPositiveButton(android.R.string.ok, null)
                     .show()
                 return@addOnSuccessListener
             }
@@ -634,7 +637,7 @@ class TrackNavigation : Fragment() {
         }.addOnFailureListener {
             Toast.makeText(
                 requireContext(),
-                "Unable to get last location to start navigation",
+                R.string.navigation_no_location,
                 Toast.LENGTH_SHORT
             ).show()
         }
@@ -647,7 +650,7 @@ class TrackNavigation : Fragment() {
         stopIdleSpeedUpdates()
         TrackNavigationService.isNavigating = true
         statsLayout.visibility = View.GONE
-        btnRecord.text = "Cancel Navigation"
+        btnRecord.setText(R.string.navigation_cancel)
         compass.setActive(true)
         myLocationOverlay.followsAnimation = true
         followZoom.reset(clearSpeed = true)
@@ -668,7 +671,7 @@ class TrackNavigation : Fragment() {
     private fun endNavigation() {
         TrackNavigationService.isNavigating = false
         isNavigatingUiActive = false
-        btnRecord.text = "Start Navigation"
+        btnRecord.setText(R.string.navigation_start)
         compass.setActive(false)
         myLocationOverlay.followsAnimation = false
 
@@ -687,17 +690,17 @@ class TrackNavigation : Fragment() {
             saveTravel()
             endNavigation()
             AlertDialog.Builder(requireContext())
-                .setTitle("Navigation Completed")
-                .setPositiveButton("OK", null)
+                .setTitle(R.string.navigation_completed)
+                .setPositiveButton(android.R.string.ok, null)
                 .show()
         } else {
             AlertDialog.Builder(requireContext())
-                .setTitle("Cancel Navigation")
-                .setMessage("Are you sure you want to stop? Your progress will be lost.")
-                .setPositiveButton("Confirm") { _, _ ->
+                .setTitle(R.string.navigation_cancel)
+                .setMessage(R.string.navigation_cancel_message)
+                .setPositiveButton(R.string.dialog_confirm) { _, _ ->
                     endNavigation()
                 }
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton(R.string.dialog_cancel, null)
                 .show()
         }
     }
@@ -705,7 +708,7 @@ class TrackNavigation : Fragment() {
     private fun saveTravel() {
         val travelData = TrackNavigationService.getLastNavigationData()
         if (travelData == null) {
-            Toast.makeText(requireContext(), "No travel data to save.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), R.string.navigation_no_travel, Toast.LENGTH_SHORT).show()
             return
         }
         val questVehicle = travelData.vehicle ?: trackVehicle?.id
@@ -736,13 +739,13 @@ class TrackNavigation : Fragment() {
                     if (travelResponse.isSuccessful) {
                         Toast.makeText(
                             requireContext(),
-                            "Travel data saved successfully!",
+                            R.string.navigation_travel_saved,
                             Toast.LENGTH_SHORT
                         ).show()
                     } else {
                         Toast.makeText(
                             requireContext(),
-                            travelResponse.errorBody()?.string() ?: "Error saving travel data",
+                            travelResponse.errorBody()?.string() ?: getString(R.string.navigation_travel_failed),
                             Toast.LENGTH_SHORT
                         ).show()
                     }

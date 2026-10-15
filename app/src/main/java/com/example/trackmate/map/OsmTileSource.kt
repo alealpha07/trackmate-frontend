@@ -4,21 +4,30 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteException
 import android.util.Log
+import androidx.annotation.StringRes
 import com.example.trackmate.BuildConfig
+import com.example.trackmate.R
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.modules.DatabaseFileArchive
 import org.osmdroid.tileprovider.modules.SqlTileWriter
 import org.osmdroid.tileprovider.tilesource.XYTileSource
 import java.io.File
 
-enum class MapStyle(val id: String, val label: String, val urlSegment: String) {
-    OUTDOORS("outdoors", "Outdoors", "outdoors"),
-    STREETS("osm_bright", "Streets", "osm_bright"),
-    LIGHT("alidade_smooth", "Light", "alidade_smooth"),
-    DARK("alidade_smooth_dark", "Dark", "alidade_smooth_dark");
+enum class MapStyle(val id: String, @StringRes val label: Int) {
+    AUTO("auto", R.string.map_style_auto),
+    OUTDOORS("outdoors", R.string.map_style_outdoors),
+    STREETS("osm_bright", R.string.map_style_streets),
+    LIGHT("alidade_smooth", R.string.map_style_light),
+    DARK("alidade_smooth_dark", R.string.map_style_dark);
+
+    fun shown(context: Context): MapStyle {
+        if (this != AUTO) return this
+        val night = context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+        return if (night == android.content.res.Configuration.UI_MODE_NIGHT_YES) DARK else OUTDOORS
+    }
 
     companion object {
-        fun fromId(id: String?): MapStyle = entries.find { it.id == id } ?: OUTDOORS
+        fun fromId(id: String?): MapStyle = entries.find { it.id == id } ?: AUTO
     }
 }
 
@@ -67,11 +76,14 @@ fun saveMapStyle(context: Context, style: MapStyle) {
         .edit().putString(KEY_MAP_STYLE, style.id).apply()
 }
 
-fun tileSourceFor(style: MapStyle): XYTileSource = XYTileSource(
-    "Stadia_${style.id}",
-    0, 20, 256, ".png?api_key=${BuildConfig.STADIA_MAPS_API_KEY}",
-    arrayOf("https://tiles.stadiamaps.com/tiles/${style.urlSegment}/"),
-    OSM_ATTRIBUTION
-)
+fun tileSourceFor(context: Context, style: MapStyle): XYTileSource {
+    val shown = style.shown(context)
+    return XYTileSource(
+        "Stadia_${shown.id}",
+        0, 20, 256, ".png?api_key=${BuildConfig.STADIA_MAPS_API_KEY}",
+        arrayOf("https://tiles.stadiamaps.com/tiles/${shown.id}/"),
+        OSM_ATTRIBUTION
+    )
+}
 
 const val OSM_ATTRIBUTION = "© Stadia Maps, © OpenMapTiles, © OpenStreetMap contributors"

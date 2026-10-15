@@ -1,8 +1,9 @@
 package com.example.trackmate.map
 
 import android.content.res.ColorStateList
-import android.graphics.Color
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import com.example.trackmate.R
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import org.osmdroid.views.MapView
 
@@ -46,11 +47,12 @@ class MapCompassController(
 
     private fun applyStyle() {
         // tinted background when north is locked
+        val context = button.context
         button.backgroundTintList = ColorStateList.valueOf(
-            if (isNorthLocked) Color.parseColor("#EDE7F6") else Color.WHITE
+            ContextCompat.getColor(context, if (isNorthLocked) R.color.map_control_active else R.color.map_control)
         )
-        button.contentDescription =
-            if (isNorthLocked) "Map locked to north. Tap to follow direction of travel"
-            else "Map follows direction of travel. Tap to lock to north"
+        button.contentDescription = context.getString(
+            if (isNorthLocked) R.string.map_compass_locked else R.string.map_compass_follow
+        )
     }
 }

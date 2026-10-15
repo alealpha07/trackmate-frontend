@@ -1,0 +1,22 @@
+<resources>
+    <color name="map_control">#FF2C2C2C</color>
+    <color name="map_control_icon">#FFE6E6E6</color>
+    <color name="map_control_active">#FF3D3552</color>
+    <color name="map_overlay">#BB1E1E1E</color>
+    <color name="map_card">#F21E1E1E</color>
+    <color name="map_card_text">#FFE6E6E6</color>
+    <color name="map_card_text_secondary">#FFA3A3A3</color>
+    <color name="map_credit">#B31E1E1E</color>
+    <color name="map_credit_text">#FFC8C8C8</color>
+    <color name="icon">#FFFFFFFF</color>
+    <color name="text_secondary">#FFA3A3A3</color>
+    <color name="divider">#FF3A3A3A</color>
+    <color name="placeholder">#FF2C2C2C</color>
+    <color name="danger">#FFFF6B6B</color>
+    <color name="sheet_handle">#FF5A5A5A</color>
+    <color name="level_circle">#FF3A3A3A</color>
+    <color name="level_circle_next">#FF4A4A4A</color>
+    <color name="speed_slowest">#FFFFFFFF</color>
+    <color name="chart_line">#FF64B5F6</color>
+    <color name="logo_background">#FFFFFFFF</color>
+</resources>

@@ -16,6 +16,7 @@ The backend (API and web route planner) is in [trackmate-backend](https://github
 - Compare travels with graphs, a speed map and a leaderboard for each track.
 - Share tracks as posts, add friends, like and save posts, and send links that open in the app.
 - Complete daily quests to earn XP and level up.
+- Light and dark theme, in English, Italian or German, following the phone or chosen in Settings.
 
 ## Tech stack
 

@@ -6,6 +6,7 @@ import android.view.View
 import android.view.animation.LinearInterpolator
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import com.example.trackmate.R
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
@@ -148,18 +149,18 @@ fun setupMapControls(
     btnLayers.setOnClickListener {
         val styles = MapStyle.entries.toTypedArray()
         val current = getSavedMapStyle(context)
-        val labels = styles.map { it.label }.toTypedArray()
+        val labels = styles.map { context.getString(it.label) }.toTypedArray()
 
         AlertDialog.Builder(context)
-            .setTitle("Map style")
+            .setTitle(R.string.map_style)
             .setSingleChoiceItems(labels, styles.indexOf(current)) { dialog, which ->
                 val selected = styles[which]
                 saveMapStyle(context, selected)
-                mapView.setTileSource(tileSourceFor(selected))
+                mapView.setTileSource(tileSourceFor(context, selected))
                 mapView.invalidate()
                 dialog.dismiss()
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton(R.string.dialog_cancel, null)
             .show()
     }
 
@@ -171,7 +172,7 @@ fun setupMapControls(
         if (location != null) {
             centerOnLocation(location)
         } else {
-            Toast.makeText(context, "Current location not available yet", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.map_location_unavailable, Toast.LENGTH_SHORT).show()
         }
     }
 }

@@ -18,6 +18,12 @@ import com.example.trackmate.MainActivity
 import com.example.trackmate.R
 import com.example.trackmate.api.ChangePasswordRequest
 import com.example.trackmate.api.DeleteAccountRequest
+import com.example.trackmate.util.AppLanguage
+import com.example.trackmate.util.ThemeMode
+import com.example.trackmate.util.chooseLanguage
+import com.example.trackmate.util.chosenLanguage
+import com.example.trackmate.util.saveTheme
+import com.example.trackmate.util.savedTheme
 import com.example.trackmate.util.showAboveKeyboard
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.CoroutineScope
@@ -43,6 +49,15 @@ class Settings : Fragment() {
 
         view.findViewById<Button>(R.id.btnCredits).setOnClickListener {
             findNavController().navigate(R.id.credits)
+        }
+        view.findViewById<Button>(R.id.btnTheme).apply {
+            text = getString(R.string.settings_value, getString(R.string.settings_theme), getString(savedTheme(context).label))
+            setOnClickListener { showThemeDialog() }
+        }
+        view.findViewById<Button>(R.id.btnLanguage).apply {
+            val language = chosenLanguage()?.displayName ?: getString(R.string.settings_system_default)
+            text = getString(R.string.settings_value, getString(R.string.settings_language), language)
+            setOnClickListener { showLanguageDialog() }
         }
         view.findViewById<Button>(R.id.btnChangePassword).setOnClickListener { showChangePasswordDialog() }
         view.findViewById<Button>(R.id.btnExport).setOnClickListener { exportLauncher.launch("trackmate-data.zip") }
@@ -73,6 +88,37 @@ class Settings : Fragment() {
                 .setPopUpTo(R.id.settings, true)
                 .build()
         )
+    }
+
+    // both recreate the activity, which lands back here
+    private fun showThemeDialog() {
+        val themes = ThemeMode.entries
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.settings_theme)
+            .setSingleChoiceItems(
+                themes.map { getString(it.label) }.toTypedArray(),
+                themes.indexOf(savedTheme(requireContext()))
+            ) { dialog, which ->
+                dialog.dismiss()
+                saveTheme(requireContext(), themes[which])
+            }
+            .setNegativeButton(R.string.dialog_cancel, null)
+            .show()
+    }
+
+    private fun showLanguageDialog() {
+        val languages = listOf(null) + AppLanguage.entries
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.settings_language)
+            .setSingleChoiceItems(
+                languages.map { it?.displayName ?: getString(R.string.settings_system_default) }.toTypedArray(),
+                languages.indexOf(chosenLanguage())
+            ) { dialog, which ->
+                dialog.dismiss()
+                chooseLanguage(languages[which])
+            }
+            .setNegativeButton(R.string.dialog_cancel, null)
+            .show()
     }
 
     private fun showChangePasswordDialog() {

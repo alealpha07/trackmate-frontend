@@ -113,7 +113,8 @@ class SearchAdapter(
         fun bind(post: PostSearchResponse) {
             binding.postTitleText.text = post.title
             binding.description.text = post.description
-            binding.likeCount.text = "${post.likesCount} Likes"
+            binding.likeCount.text =
+                binding.root.resources.getQuantityString(R.plurals.post_likes, post.likesCount, post.likesCount)
             binding.username.text = post.username
             CoroutineScope(Dispatchers.IO).launch {
                 try {

@@ -54,11 +54,13 @@ class TravelAdapter(
         val travel = travels[position]
         holder.txtName.text = travel.name
         holder.imgVehicle.bindVehicle(Vehicle.fromId(travel.vehicle))
-        holder.txtTime.text = "Time: ${formatTime(travel.time)}"
-        holder.txtMaxSpeed.text = "Max Speed: ${String.format("%.2f", travel.maxSpeed)} km/h"
+        val res = holder.itemView.resources
+        holder.txtTime.text = res.getString(R.string.travel_time, formatTime(travel.time))
+        holder.txtMaxSpeed.text =
+            res.getString(R.string.travel_max_speed, res.getString(R.string.speed_kmh, "%.2f".format(travel.maxSpeed)))
         holder.txtAvgSpeed.text =
-            "Best Avg Speed: ${String.format("%.2f", travel.averageSpeed)} km/h"
-        holder.txtDate.text = "Date: ${travel.dateTimeString}"
+            res.getString(R.string.travel_avg_speed, res.getString(R.string.speed_kmh, "%.2f".format(travel.averageSpeed)))
+        holder.txtDate.text = res.getString(R.string.travel_date, travel.dateTimeString)
         holder.btnRenavigate.setOnClickListener { onRenavigate(travel) }
         holder.itemView.setOnLongClickListener {
             onDelete(travel)
