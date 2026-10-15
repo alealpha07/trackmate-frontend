@@ -41,6 +41,9 @@ import com.example.trackmate.map.tileSourceFor
 import com.example.trackmate.track.MAX_PLAUSIBLE_SPEED_MPS
 import com.example.trackmate.track.TrackNavigationService
 import com.example.trackmate.util.Vehicle
+import com.example.trackmate.util.hasLocationPermission
+import com.example.trackmate.util.locationGranted
+import com.example.trackmate.util.requestLocationWithRationale
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -83,12 +86,12 @@ class Navigate : Fragment() {
     }
 
     private val requestPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
-            if (isGranted) {
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
+            if (results.locationGranted()) {
                 enableMyLocation()
                 if (!TrackRecordingService.isRecording) startIdleSpeedUpdates()
             } else {
-                Toast.makeText(requireContext(), "Location permission denied", Toast.LENGTH_SHORT)
+                Toast.makeText(requireContext(), R.string.location_denied, Toast.LENGTH_SHORT)
                     .show()
             }
         }
@@ -174,7 +177,8 @@ class Navigate : Fragment() {
                 vehicles = Vehicle.profile(requireContext()),
                 saveLabel = "Save",
                 cancelLabel = "Discard",
-                confirmCancel = "Discard this recording? It can't be recovered."
+                confirmCancel = "Discard this recording? It can't be recovered.",
+                onCancel = ::deleteRecordedFile
             ) { name, vehicle, done -> saveTrack(name, vehicle!!, done) }
         }
     }
@@ -295,19 +299,18 @@ class Navigate : Fragment() {
             false
         }
 
-        if (ContextCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION
-            )
-            == PackageManager.PERMISSION_GRANTED
-        ) {
+        if (requireContext().hasLocationPermission()) {
             enableMyLocation()
         } else {
-            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            requestLocationWithRationale(requestPermissionLauncher)
         }
     }
 
     private fun startRecording() {
+        if (!requireContext().hasLocationPermission()) {
+            requestLocationWithRationale(requestPermissionLauncher)
+            return
+        }
         clearPolyline()
         stopIdleSpeedUpdates()
         TrackRecordingService.isRecording = true
@@ -394,11 +397,16 @@ class Navigate : Fragment() {
                 Log.d("API-ERROR", e.stackTraceToString())
                 "The track is saved, but its travel couldn't be."
             }
+            file.delete()
             withContext(Dispatchers.Main) {
                 done(null)
                 Toast.makeText(appContext, travelError ?: "Track saved successfully!", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    private fun deleteRecordedFile() {
+        File(requireContext().filesDir, "track.json").delete()
     }
 
     override fun onResume() {

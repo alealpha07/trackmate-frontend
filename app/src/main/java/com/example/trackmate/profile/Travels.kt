@@ -30,7 +30,8 @@ import androidx.navigation.fragment.findNavController
 
 class TravelAdapter(
     private val travels: MutableList<TravelItem>,
-    private val onRenavigate: (TravelItem) -> Unit
+    private val onRenavigate: (TravelItem) -> Unit,
+    private val onDelete: (TravelItem) -> Unit
 ) : RecyclerView.Adapter<TravelAdapter.TravelViewHolder>() {
 
     inner class TravelViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -59,9 +60,20 @@ class TravelAdapter(
             "Best Avg Speed: ${String.format("%.2f", travel.averageSpeed)} km/h"
         holder.txtDate.text = "Date: ${travel.dateTimeString}"
         holder.btnRenavigate.setOnClickListener { onRenavigate(travel) }
+        holder.itemView.setOnLongClickListener {
+            onDelete(travel)
+            true
+        }
     }
 
     override fun getItemCount(): Int = travels.size
+
+    fun remove(travel: TravelItem) {
+        val index = travels.indexOf(travel)
+        if (index < 0) return
+        travels.removeAt(index)
+        notifyItemRemoved(index)
+    }
 
     fun updateList(newTravels: List<TravelItem>) {
         travels.clear()
@@ -86,7 +98,8 @@ class Travels : Fragment() {
 
         adapter = TravelAdapter(
             mutableListOf(),
-            onRenavigate = { travel -> reNavigate(travel) }
+            onRenavigate = { travel -> reNavigate(travel) },
+            onDelete = { travel -> confirmDelete(travel) }
         )
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -105,6 +118,35 @@ class Travels : Fragment() {
                     val travels = response.body()!!
                     withContext(Dispatchers.Main) {
                         adapter.updateList(travels)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.d("API-ERROR", e.stackTraceToString())
+            }
+        }
+    }
+
+    private fun confirmDelete(travel: TravelItem) {
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.travel_delete_title)
+            .setMessage(R.string.travel_delete_message)
+            .setPositiveButton(R.string.travel_delete_confirm) { _, _ -> deleteTravel(travel) }
+            .setNegativeButton(R.string.dialog_cancel, null)
+            .show()
+    }
+
+    private fun deleteTravel(travel: TravelItem) {
+        val appContext = requireContext().applicationContext
+        apiCallCoroutine.launch {
+            try {
+                val response = api.deleteTravel(travel.id)
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccessful) {
+                        adapter.remove(travel)
+                        Toast.makeText(appContext, R.string.travel_deleted, Toast.LENGTH_SHORT).show()
+                    } else {
+                        val errorMsg = response.errorBody()?.string() ?: appContext.getString(R.string.error_generic)
+                        Toast.makeText(appContext, errorMsg, Toast.LENGTH_SHORT).show()
                     }
                 }
             } catch (e: Exception) {

@@ -19,6 +19,12 @@ data class RegisterRequest(
 )
 
 @JsonClass(generateAdapter = true)
+data class ChangePasswordRequest(
+    val oldPassword: String,
+    val newPassword: String
+)
+
+@JsonClass(generateAdapter = true)
 data class UserResponse(
     val id: Int,
     val username: String,
@@ -50,4 +56,10 @@ interface AuthService {
     suspend fun getUser(
         @Query("lang") lang: String = "en"
     ): Response<UserResponse>
+
+    @PUT("auth/password")
+    suspend fun changePassword(
+        @Body data: ChangePasswordRequest,
+        @Query("lang") lang: String = "en"
+    ): Response<ResponseBody>
 }

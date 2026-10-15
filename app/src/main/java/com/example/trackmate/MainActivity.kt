@@ -26,6 +26,10 @@ import com.example.trackmate.api.SearchService
 import com.example.trackmate.api.TrackService
 import com.example.trackmate.api.UserSearchResponse
 import com.example.trackmate.databinding.ActivityMainBinding
+import com.example.trackmate.map.configureTileCache
+import com.example.trackmate.navigate.TrackRecordingService
+import com.example.trackmate.track.TrackNavigationService
+import com.example.trackmate.util.Vehicle
 import com.example.trackmate.posts.parseSharedPostId
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
@@ -47,6 +51,8 @@ import okhttp3.Interceptor
 import androidx.appcompat.app.AppCompatDelegate
 import java.io.File
 import java.util.concurrent.TimeUnit
+
+private val LOCAL_GPS_FILES = listOf("track.json", "navigation.json", "navigation_track.json", "travel_points.json")
 
 class SessionCookieJar(context: Context) : CookieJar {
     private val masterKey = MasterKey.Builder(context)
@@ -127,11 +133,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        org.osmdroid.config.Configuration.getInstance().apply {
-            userAgentValue = packageName
-            osmdroidBasePath = File(cacheDir, "osmdroid")
-            osmdroidTileCache = File(osmdroidBasePath, "tiles")
-        }
+        configureTileCache(this)
 
         cookieJar = SessionCookieJar(baseContext)
 
@@ -247,6 +249,19 @@ class MainActivity : AppCompatActivity() {
             null,
             NavOptions.Builder().setPopUpTo(R.id.home, true).build()
         )
+    }
+
+    // on logout and account deletion, also when the server can't be reached
+    fun clearLocalData() {
+        TrackRecordingService.discard()
+        stopService(Intent(this, TrackRecordingService::class.java))
+        stopService(Intent(this, TrackNavigationService::class.java))
+        cookieJar.clearCookies()
+        runCatching { cache.evictAll() }
+        LOCAL_GPS_FILES.forEach { File(filesDir, it).delete() }
+        cacheDir.listFiles { file -> file.name.startsWith("upload") && file.name.endsWith(".jpg") }
+            ?.forEach { it.delete() }
+        Vehicle.clearSaved(this)
     }
 
     override fun onSupportNavigateUp(): Boolean {

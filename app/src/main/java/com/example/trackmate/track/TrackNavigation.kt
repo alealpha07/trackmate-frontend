@@ -58,6 +58,9 @@ import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
+import com.example.trackmate.util.hasLocationPermission
+import com.example.trackmate.util.locationGranted
+import com.example.trackmate.util.requestLocationWithRationale
 import java.io.File
 import java.io.FileOutputStream
 
@@ -114,12 +117,12 @@ class TrackNavigation : Fragment() {
     private var idleSpeedCallback: LocationCallback? = null
 
     private val requestPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            if (isGranted) {
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
+            if (results.locationGranted()) {
                 enableMyLocation()
                 if (!TrackNavigationService.isNavigating) startIdleSpeedUpdates()
             } else {
-                Toast.makeText(requireContext(), "Location permission denied", Toast.LENGTH_SHORT)
+                Toast.makeText(requireContext(), R.string.location_denied, Toast.LENGTH_SHORT)
                     .show()
             }
         }
@@ -367,15 +370,10 @@ class TrackNavigation : Fragment() {
             false
         }
 
-        if (ContextCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION
-            )
-            == PackageManager.PERMISSION_GRANTED
-        ) {
+        if (requireContext().hasLocationPermission()) {
             enableMyLocation()
         } else {
-            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            requestLocationWithRationale(requestPermissionLauncher)
         }
 
         loadTrackData()
@@ -387,6 +385,10 @@ class TrackNavigation : Fragment() {
             try {
                 var track: Track? = null
                 val fileResponse = api.getTrackFile(args.trackId)
+                if (fileResponse.code() == 403) {
+                    withContext(Dispatchers.Main) { leaveUnavailableTrack() }
+                    return@launch
+                }
                 if (fileResponse.isSuccessful && fileResponse.body() != null) {
                     val file = File(requireContext().filesDir, "navigation.json")
                     fileResponse.body()!!.byteStream().use { it.copyTo(FileOutputStream(file)) }
@@ -584,6 +586,8 @@ class TrackNavigation : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         mapView.onDetach()
+        // a running navigation already has its own copy
+        File(requireContext().filesDir, "navigation.json").delete()
     }
 
     private fun startNavigation() {
@@ -593,17 +597,8 @@ class TrackNavigation : Fragment() {
             return
         }
 
-        if (ActivityCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION
-            )
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                requireActivity(),
-                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                1001
-            )
+        if (!requireContext().hasLocationPermission()) {
+            requestLocationWithRationale(requestPermissionLauncher)
             return
         }
 
@@ -683,6 +678,7 @@ class TrackNavigation : Fragment() {
 
         val intent = Intent(requireContext(), TrackNavigationService::class.java)
         requireContext().stopService(intent)
+        File(requireContext().filesDir, "navigation_track.json").delete()
         startIdleSpeedUpdates()
     }
 
@@ -772,6 +768,15 @@ class TrackNavigation : Fragment() {
             api.uploadTravelFile(body, travelId)
         } catch (e: Exception) {
             Log.d("API-ERROR", e.stackTraceToString())
+        } finally {
+            context?.let { File(it.filesDir, "travel_points.json").delete() }
         }
     }
+}
+
+// someone else's track without a post, for example after the post was deleted
+internal fun Fragment.leaveUnavailableTrack() {
+    if (!isAdded) return
+    Toast.makeText(requireContext(), R.string.track_unavailable, Toast.LENGTH_LONG).show()
+    findNavController().popBackStack()
 }

@@ -119,4 +119,36 @@
     <string name="track_save_failed">Couldn\'t save the track: check your connection and try again.</string>
     <string name="track_keep">Keep</string>
     <string name="error_generic">Something went wrong, try again.</string>
+    <!-- Account and privacy -->
+    <string name="settings_change_password">Change password</string>
+    <string name="settings_export">Download my data</string>
+    <string name="settings_delete_account">Delete account</string>
+    <string name="password_old">Current password</string>
+    <string name="password_new">New password (at least 8 characters)</string>
+    <string name="password_confirm">Confirm new password</string>
+    <string name="password_mismatch">The new passwords don\'t match</string>
+    <string name="password_too_short">At least 8 characters</string>
+    <string name="password_changed">Password changed. Other devices are logged out.</string>
+    <string name="export_saved">Your data is saved</string>
+    <string name="export_failed">Couldn\'t download your data, try again.</string>
+    <string name="delete_account_message">This deletes your profile, tracks, travels, posts, likes and friends for good. Travels other people recorded on your tracks stay, without the track. Enter your password to confirm.</string>
+    <string name="delete_account_confirm">Delete for good</string>
+    <string name="account_deleted">Your account is deleted</string>
+    <string name="dialog_cancel">Cancel</string>
+    <string name="dialog_save">Save</string>
+    <string name="photo_change">Change photo</string>
+    <string name="photo_remove">Remove photo</string>
+    <string name="photo_removed">Photo removed</string>
+    <string name="travel_delete_title">Delete this travel?</string>
+    <string name="travel_delete_message">Its time, speeds and GPS points are deleted for good.</string>
+    <string name="travel_delete_confirm">Delete</string>
+    <string name="travel_deleted">Travel deleted</string>
+    <string name="track_unavailable">This track isn\'t available: it\'s private.</string>
+    <string name="location_rationale_title">Location access</string>
+    <string name="location_rationale_message">TrackMate uses your location to show you on the map, record your tracks and guide you along them. Your position is only recorded while the recording or navigation notification is showing, and only saved when you save a track or a travel.</string>
+    <string name="location_rationale_continue">Continue</string>
+    <string name="location_denied">Location permission denied</string>
+    <!-- Open-source licences -->
+    <string name="credits_licences">Open-source licences</string>
+    <string name="credits_licences_body">TrackMate uses these open-source libraries under the Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0):\nosmdroid\nMPAndroidChart\nRetrofit, OkHttp and Moshi\nKotlin and kotlinx.coroutines\nAndroidX and Jetpack Media3\nMaterial Components for Android\nMaterial icons</string>
 </resources>

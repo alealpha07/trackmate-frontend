@@ -22,6 +22,47 @@
         style="@style/Widget.MaterialComponents.Button.TextButton" />
 
     <Button
+        android:id="@+id/btnChangePassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:gravity="start|center_vertical"
+        android:text="@string/settings_change_password"
+        app:icon="@drawable/ic_lock_24"
+        app:layout_constraintTop_toBottomOf="@id/btnCredits"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        style="@style/Widget.MaterialComponents.Button.TextButton" />
+
+    <Button
+        android:id="@+id/btnExport"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:gravity="start|center_vertical"
+        android:text="@string/settings_export"
+        app:icon="@drawable/ic_download_24"
+        app:layout_constraintTop_toBottomOf="@id/btnChangePassword"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        style="@style/Widget.MaterialComponents.Button.TextButton" />
+
+    <Button
+        android:id="@+id/btnDeleteAccount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:gravity="start|center_vertical"
+        android:text="@string/settings_delete_account"
+        app:icon="@drawable/ic_delete_24"
+        android:textColor="@android:color/holo_red_dark"
+        app:iconTint="@android:color/holo_red_dark"
+        app:layout_constraintTop_toBottomOf="@id/btnExport"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        style="@style/Widget.MaterialComponents.Button.TextButton" />
+
+    <Button
         android:id="@+id/btnLogout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

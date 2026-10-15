@@ -17,6 +17,11 @@ data class EditVehiclesRequest(
 )
 
 @JsonClass(generateAdapter = true)
+data class DeleteAccountRequest(
+    val password: String
+)
+
+@JsonClass(generateAdapter = true)
 data class ProfileResponse(
     val username: String,
     val bio: String,
@@ -38,6 +43,25 @@ interface ProfileService {
     @Streaming
     suspend fun getProfileImage(
         @Query("id") id: Int,
+        @Query("lang") lang: String = "en"
+    ): Response<ResponseBody>
+
+    @DELETE("user/image")
+    suspend fun deleteImage(
+        @Query("lang") lang: String = "en"
+    ): Response<ResponseBody>
+
+    // personal data, keep it out of the HTTP cache
+    @Headers("Cache-Control: no-store")
+    @GET("user/export")
+    @Streaming
+    suspend fun exportData(
+        @Query("lang") lang: String = "en"
+    ): Response<ResponseBody>
+
+    @HTTP(method = "DELETE", path = "user", hasBody = true)
+    suspend fun deleteAccount(
+        @Body data: DeleteAccountRequest,
         @Query("lang") lang: String = "en"
     ): Response<ResponseBody>
 

@@ -37,10 +37,19 @@ class TrackRecordingService : Service() {
     companion object {
         var isRecording = false
         private var lastTravelData: NewTravelRequest? = null
+        // set on logout, so stopping doesn't save the recording
+        private var discarded = false
         private val _pathPoints = mutableListOf<Pair<Location, Long>>()
         val pathPoints: List<Pair<Location, Long>>
             get() = _pathPoints.toList()
         fun getLastTravelData(): NewTravelRequest? = lastTravelData
+
+        fun discard() {
+            discarded = true
+            isRecording = false
+            _pathPoints.clear()
+            lastTravelData = null
+        }
 
         // Needed for more precise maximum speed calculation, need to discard bad quality points
         private const val MAX_ACCURACY_METERS = 25f
@@ -52,6 +61,10 @@ class TrackRecordingService : Service() {
     override fun onCreate() {
         super.onCreate()
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        // static, so the last recording would leak into this one
+        _pathPoints.clear()
+        lastTravelData = null
+        discarded = false
         startForegroundService()
         startLocationUpdates()
         startTime = System.nanoTime()
@@ -136,13 +149,13 @@ class TrackRecordingService : Service() {
     }
 
     private fun saveToJsonAsync() {
+        val points = pathPoints
         CoroutineScope(Dispatchers.IO).launch {
             val moshi = Moshi.Builder()
                 .add(KotlinJsonAdapterFactory())
                 .build()
             val adapter = moshi.adapter(Track::class.java)
 
-            val points = pathPoints
             val trackPointsList = points.mapIndexed { index, (location, time) ->
                 val prev = points.getOrNull(index - 1)?.first
                 TrackPoint(location.latitude, location.longitude, time, speedAtPointKmh(prev, location))
@@ -189,8 +202,9 @@ class TrackRecordingService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         locationCallback?.let { fusedLocationClient.removeLocationUpdates(it) }
-        saveToJsonAsync()
         updateHandler.removeCallbacks(updateRunnable)
+        if (discarded) return
+        saveToJsonAsync()
 
         lastTravelData = calculateTravelData()
     }

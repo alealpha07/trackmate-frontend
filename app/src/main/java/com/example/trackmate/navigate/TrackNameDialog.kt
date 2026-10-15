@@ -19,6 +19,7 @@ fun Fragment.showTrackNameDialog(
     saveLabel: String,
     cancelLabel: String,
     confirmCancel: String? = null,
+    onCancel: () -> Unit = {},
     onSave: (name: String, vehicle: Vehicle?, done: (error: String?) -> Unit) -> Unit
 ) {
     val dialogView = layoutInflater.inflate(R.layout.dialog_track_name, null)
@@ -34,7 +35,7 @@ fun Fragment.showTrackNameDialog(
         .setView(dialogView)
         // set below so a click doesn't close the dialog
         .setPositiveButton(saveLabel, null)
-        .setNegativeButton(cancelLabel, null)
+        .setNegativeButton(cancelLabel) { _, _ -> onCancel() }
         .setCancelable(confirmCancel == null)
         .showAboveKeyboard()
     val saveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
@@ -64,7 +65,10 @@ fun Fragment.showTrackNameDialog(
         cancelButton.setOnClickListener {
             AlertDialog.Builder(requireContext())
                 .setMessage(confirmCancel)
-                .setPositiveButton(cancelLabel) { _, _ -> dialog.dismiss() }
+                .setPositiveButton(cancelLabel) { _, _ ->
+                    dialog.dismiss()
+                    onCancel()
+                }
                 .setNegativeButton(R.string.track_keep, null)
                 .show()
         }

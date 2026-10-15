@@ -68,6 +68,10 @@ enum class Vehicle(
             return entries.filter { it.id in ids }.ifEmpty { entries }
         }
 
+        fun clearSaved(context: Context) {
+            prefs(context).edit().clear().apply()
+        }
+
         fun saveProfile(context: Context, vehicles: List<Vehicle>) {
             prefs(context).edit().putString(KEY_PROFILE, vehicles.joinToString(",") { it.id }).apply()
         }

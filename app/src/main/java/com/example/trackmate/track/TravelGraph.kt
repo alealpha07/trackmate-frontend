@@ -175,6 +175,10 @@ class TravelGraph : Fragment() {
             try {
                 // details carry the owner id and the track's vehicle
                 val trackResponse = api.getTrack(args.trackId)
+                if (trackResponse.code() == 403) {
+                    withContext(Dispatchers.Main) { leaveUnavailableTrack() }
+                    return@launch
+                }
                 val trackDetails = trackResponse.body().takeIf { trackResponse.isSuccessful }
 
                 val response = api.getTravelsByTrack(args.trackId)

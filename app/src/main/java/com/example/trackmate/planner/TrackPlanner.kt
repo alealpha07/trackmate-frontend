@@ -50,6 +50,8 @@ import com.example.trackmate.map.getSavedMapStyle
 import com.example.trackmate.map.setupMapControls
 import com.example.trackmate.map.tileSourceFor
 import com.example.trackmate.navigate.showTrackNameDialog
+import com.example.trackmate.util.locationGranted
+import com.example.trackmate.util.requestLocationWithRationale
 import com.example.trackmate.util.Vehicle
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
@@ -186,8 +188,8 @@ class TrackPlanner : Fragment() {
     private val trackService by lazy { (requireActivity() as MainActivity).trackService }
 
     private val requestPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (granted && view != null) {
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
+            if (results.locationGranted() && view != null) {
                 myLocationOverlay.enableMyLocation()
                 useMyLocationAsStart()
             }
@@ -335,7 +337,7 @@ class TrackPlanner : Fragment() {
             useMyLocationAsStart()
         } else if (!askedForLocation) {
             askedForLocation = true
-            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            requestLocationWithRationale(requestPermissionLauncher, withNotifications = false)
         }
     }
 

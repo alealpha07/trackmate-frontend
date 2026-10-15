@@ -165,6 +165,12 @@ interface TrackService {
         @Query("lang") lang: String = "en"
     ): Response<ResponseBody>
 
+    @DELETE("track/travel")
+    suspend fun deleteTravel(
+        @Query("id") id: Int,
+        @Query("lang") lang: String = "en"
+    ): Response<ResponseBody>
+
     @GET("track/travel")
     suspend fun getTravels(
         @Query("lang") lang: String = "en"

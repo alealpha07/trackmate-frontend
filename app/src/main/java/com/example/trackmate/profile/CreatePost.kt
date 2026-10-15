@@ -139,6 +139,7 @@ class CreatePost : Fragment() {
                         val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
 
                         val uploadResponse = api.uploadPostImage(body, postId)
+                        file.delete()
                         withContext(Dispatchers.Main) {
                             if (!uploadResponse.isSuccessful) {
                                 val errorMsg = uploadResponse.errorBody()?.string()

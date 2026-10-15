@@ -43,6 +43,14 @@
 
         <TextView
             style="@style/CreditsHeading"
+            android:text="@string/credits_licences" />
+
+        <TextView
+            style="@style/CreditsBody"
+            android:text="@string/credits_licences_body" />
+
+        <TextView
+            style="@style/CreditsHeading"
             android:text="@string/credits_contact" />
 
         <TextView

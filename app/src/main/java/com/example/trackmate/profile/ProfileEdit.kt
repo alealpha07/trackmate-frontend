@@ -39,6 +39,7 @@ class ProfileEdit : Fragment() {
     private lateinit var btnSaveProfile: Button
     private lateinit var imgProfile: ImageView
     private lateinit var btnChangeImage: Button
+    private lateinit var btnRemoveImage: Button
     private lateinit var vehicleChecks: Map<Vehicle, CheckBox>
     private lateinit var authApi: AuthService
     private lateinit var profileApi: ProfileService
@@ -50,6 +51,7 @@ class ProfileEdit : Fragment() {
             uri?.let {
                 selectedImageUri = it
                 imgProfile.setImageURI(it)
+                btnRemoveImage.visibility = View.VISIBLE
             }
         }
 
@@ -63,6 +65,7 @@ class ProfileEdit : Fragment() {
         btnSaveProfile = view.findViewById(R.id.btnSaveProfile)
         imgProfile = view.findViewById(R.id.imgProfile)
         btnChangeImage = view.findViewById(R.id.btnChangeImage)
+        btnRemoveImage = view.findViewById(R.id.btnRemoveImage)
         profileApi = (activity as MainActivity).profileService
         authApi = (activity as MainActivity).authService
         vehicleChecks = bindVehicleChecks(view.findViewById(R.id.vehicleChecks))
@@ -80,6 +83,7 @@ class ProfileEdit : Fragment() {
                         }
                         withContext(Dispatchers.Main) {
                             imgProfile.setImageBitmap(bitmap)
+                            btnRemoveImage.visibility = View.VISIBLE
                         }
                     }
                     withContext(Dispatchers.Main) {
@@ -99,6 +103,8 @@ class ProfileEdit : Fragment() {
             pickImageLauncher.launch("image/*")
         }
 
+        btnRemoveImage.setOnClickListener { removePhoto() }
+
         btnSaveProfile.setOnClickListener {
             val bio = etBio.text.toString().trim()
             val vehicles = vehicleChecks.filterValues { it.isChecked }.keys.toList()
@@ -116,6 +122,7 @@ class ProfileEdit : Fragment() {
 
                         val uploadResponse =
                             (activity as MainActivity).profileService.uploadImage(body)
+                        file.delete()
 
                         if (!uploadResponse.isSuccessful) {
                             withContext(Dispatchers.Main) {
@@ -154,6 +161,29 @@ class ProfileEdit : Fragment() {
         }
 
         return view
+    }
+
+    private fun removePhoto() {
+        val appContext = requireContext().applicationContext
+        selectedImageUri = null
+        apiCallCoroutine.launch {
+            try {
+                // 404: nothing on the server, only a picked photo
+                val response = profileApi.deleteImage()
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccessful || response.code() == 404) {
+                        imgProfile.setImageResource(R.drawable.baseline_person_24)
+                        btnRemoveImage.visibility = View.GONE
+                        Toast.makeText(appContext, R.string.photo_removed, Toast.LENGTH_SHORT).show()
+                    } else {
+                        val errorMsg = response.errorBody()?.string() ?: appContext.getString(R.string.error_generic)
+                        Toast.makeText(appContext, errorMsg, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.d("API-ERROR", e.stackTraceToString())
+            }
+        }
     }
 
     private fun bindVehicleChecks(container: LinearLayout): Map<Vehicle, CheckBox> {
