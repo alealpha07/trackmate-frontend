@@ -8,7 +8,8 @@ import retrofit2.http.Query
 sealed class SearchItem {
     abstract val type: String
     abstract val id: Int
-    abstract val score: Int
+    // friends, posts or km, by the sort
+    abstract val score: Double
 }
 
 @JsonClass(generateAdapter = true)
@@ -22,7 +23,7 @@ data class UserSearchResponse(
     val friendsCount: Int,
     val postsCount: Int,
     val totalTravelled: Double,
-    override val score: Int
+    override val score: Double
 ) : SearchItem()
 
 @JsonClass(generateAdapter = true)
@@ -37,7 +38,7 @@ data class PostSearchResponse(
     val savesCount: Int,
     val username: String,
     val userId: Int,
-    override val score: Int
+    override val score: Double
 ) : SearchItem()
 
 interface SearchService {

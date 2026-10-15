@@ -45,6 +45,17 @@ https://client.stadiamaps.com/signup/).
 Debug builds connect to the backend at `http://10.0.2.2:3000`, which is your computer's localhost as seen from the
 emulator.
 
+## Tests
+
+```bash
+./gradlew testDebugUnitTest
+```
+
+The unit tests run on the JVM, without an emulator or a backend. They cover the travel statistics, the planner's
+coordinates, limits and route stream, the shared post links, the map follow logic and turn-by-turn guidance. They also
+run the app's real Retrofit and Moshi setup against a MockWebServer that answers with JSON captured from the backend,
+in `app/src/test/resources/api/`.
+
 ## Credits and data licences
 
 - Map tiles © [Stadia Maps](https://stadiamaps.com/), map style © [OpenMapTiles](https://openmaptiles.org/), map data

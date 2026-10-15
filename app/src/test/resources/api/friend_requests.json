@@ -1,0 +1,14 @@
+[
+  {
+    "senderId": 3,
+    "receiverId": 1,
+    "status": false,
+    "sender": {
+      "id": 3,
+      "username": "lena",
+      "bio": "",
+      "level": 0,
+      "experience": 0
+    }
+  }
+]

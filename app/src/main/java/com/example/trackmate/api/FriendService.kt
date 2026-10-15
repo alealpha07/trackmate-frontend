@@ -23,7 +23,9 @@ data class FriendRequestsResponse(
     val status: Boolean,
     val senderId: Int,
     val receiverId: Int,
-    val sender: FriendResponse? = null
+    // received requests carry the sender, sent ones the receiver
+    val sender: FriendResponse? = null,
+    val receiver: FriendResponse? = null
 )
 
 interface FriendService {

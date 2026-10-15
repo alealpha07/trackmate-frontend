@@ -1,0 +1,40 @@
+{
+  "id": 1,
+  "trackId": 1,
+  "imageCount": 0,
+  "title": "Val Taro loop",
+  "description": "Quiet roads, one steep climb",
+  "createdAt": "2026-10-15T16:49:20.804Z",
+  "Track": {
+    "id": 1,
+    "userId": 1,
+    "name": "Val Taro loop",
+    "vehicle": "BICYCLE",
+    "user": {
+      "id": 1,
+      "username": "giulia",
+      "bio": "Gravel and hills around Parma",
+      "level": 0,
+      "experience": 0
+    }
+  },
+  "saves": [
+    {
+      "id": 1,
+      "userId": 2,
+      "postId": 1
+    }
+  ],
+  "likes": [
+    {
+      "id": 1,
+      "userId": 2,
+      "postId": 1
+    }
+  ],
+  "username": "giulia",
+  "userId": 1,
+  "liked": true,
+  "saved": true,
+  "likeCount": 1
+}

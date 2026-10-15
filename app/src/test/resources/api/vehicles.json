@@ -1,0 +1,26 @@
+[
+  {
+    "id": "car",
+    "class": "motor",
+    "plannable": false,
+    "costing": "auto"
+  },
+  {
+    "id": "motorcycle",
+    "class": "motor",
+    "plannable": false,
+    "costing": "motorcycle"
+  },
+  {
+    "id": "bicycle",
+    "class": "bicycle",
+    "plannable": true,
+    "costing": "bicycle"
+  },
+  {
+    "id": "foot",
+    "class": "foot",
+    "plannable": false,
+    "costing": "pedestrian"
+  }
+]

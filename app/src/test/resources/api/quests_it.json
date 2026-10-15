@@ -1,0 +1,82 @@
+[
+  {
+    "id": 1,
+    "userId": 1,
+    "description": "Registra 15 percorsi in bici",
+    "experience": 450,
+    "maxProgress": 15,
+    "progress": 0,
+    "type": "RECORD_TRACK",
+    "vehicle": "bicycle"
+  },
+  {
+    "id": 2,
+    "userId": 1,
+    "description": "Naviga 10 percorsi in bici",
+    "experience": 250,
+    "maxProgress": 10,
+    "progress": 0,
+    "type": "NAVIGATE_TRACK",
+    "vehicle": "bicycle"
+  },
+  {
+    "id": 3,
+    "userId": 1,
+    "description": "Naviga 10 percorsi in auto",
+    "experience": 250,
+    "maxProgress": 10,
+    "progress": 0,
+    "type": "NAVIGATE_TRACK",
+    "vehicle": "car"
+  },
+  {
+    "id": 4,
+    "userId": 1,
+    "description": "Registra 5 percorsi in auto",
+    "experience": 150,
+    "maxProgress": 5,
+    "progress": 0,
+    "type": "RECORD_TRACK",
+    "vehicle": "car"
+  },
+  {
+    "id": 5,
+    "userId": 1,
+    "description": "Cammina per 2 km",
+    "experience": 100,
+    "maxProgress": 2,
+    "progress": 0,
+    "type": "TRAVEL_DISTANCE",
+    "vehicle": "foot"
+  },
+  {
+    "id": 6,
+    "userId": 1,
+    "description": "Registra 5 percorsi a piedi",
+    "experience": 150,
+    "maxProgress": 5,
+    "progress": 0,
+    "type": "RECORD_TRACK",
+    "vehicle": "foot"
+  },
+  {
+    "id": 7,
+    "userId": 1,
+    "description": "Naviga 5 percorsi in moto",
+    "experience": 125,
+    "maxProgress": 5,
+    "progress": 0,
+    "type": "NAVIGATE_TRACK",
+    "vehicle": "motorcycle"
+  },
+  {
+    "id": 8,
+    "userId": 1,
+    "description": "Registra 10 percorsi in moto",
+    "experience": 300,
+    "maxProgress": 10,
+    "progress": 0,
+    "type": "RECORD_TRACK",
+    "vehicle": "motorcycle"
+  }
+]

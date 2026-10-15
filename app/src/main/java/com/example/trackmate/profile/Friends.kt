@@ -21,7 +21,6 @@ import com.example.trackmate.api.AuthService
 import com.example.trackmate.api.FriendRequestAction
 import com.example.trackmate.api.FriendResponse
 import com.example.trackmate.api.FriendService
-import com.example.trackmate.api.ProfileService
 import com.example.trackmate.util.loadProfileImage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -107,7 +106,6 @@ class Friends : Fragment() {
     private lateinit var friendsAdapter: FriendsAdapter
     private lateinit var api: FriendService
     private lateinit var authApi: AuthService
-    private lateinit var profileApi: ProfileService
     private val apiCallCoroutine = CoroutineScope(Dispatchers.IO)
 
     override fun onCreateView(
@@ -140,7 +138,6 @@ class Friends : Fragment() {
         friendsRecycler.adapter = friendsAdapter
         api = (activity as MainActivity).friendService
         authApi = (activity as MainActivity).authService
-        profileApi = (activity as MainActivity).profileService
         reloadData()
     }
 
@@ -158,21 +155,7 @@ class Friends : Fragment() {
                 val requests = api.getFriendRequests().body() ?: emptyList()
                 val friends = api.getFriends(currentId).body() ?: emptyList()
 
-                // the sender isn't always embedded, load it from senderId
-                val requestSenders = requests.mapNotNull { request ->
-                    request.sender ?: try {
-                        profileApi.getProfile(request.senderId).body()?.let { profile ->
-                            FriendResponse(
-                                id = request.senderId,
-                                username = profile.username,
-                                level = profile.level
-                            )
-                        }
-                    } catch (e: Exception) {
-                        Log.d("API-ERROR", e.stackTraceToString())
-                        null
-                    }
-                }
+                val requestSenders = requests.mapNotNull { it.sender }
 
                 withContext(Dispatchers.Main) {
                     if (requestSenders.isNotEmpty()) {

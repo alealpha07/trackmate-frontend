@@ -16,15 +16,13 @@ import androidx.navigation.ui.setupWithNavController
 import com.example.trackmate.api.AuthService
 import com.example.trackmate.api.FriendService
 import com.example.trackmate.api.InstructionsService
-import com.example.trackmate.api.PostSearchResponse
 import com.example.trackmate.api.PostService
 import com.example.trackmate.api.ProfileService
 import com.example.trackmate.api.QuestService
 import com.example.trackmate.api.RouteService
-import com.example.trackmate.api.SearchItem
 import com.example.trackmate.api.SearchService
 import com.example.trackmate.api.TrackService
-import com.example.trackmate.api.UserSearchResponse
+import com.example.trackmate.api.buildRetrofit
 import com.example.trackmate.databinding.ActivityMainBinding
 import com.example.trackmate.map.configureTileCache
 import com.example.trackmate.navigate.TrackRecordingService
@@ -35,15 +33,10 @@ import com.example.trackmate.util.currentLanguage
 import com.example.trackmate.posts.parseSharedPostId
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
-import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
 import androidx.core.content.edit
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -144,16 +137,6 @@ class MainActivity : AppCompatActivity() {
 
         cookieJar = SessionCookieJar(baseContext)
 
-        val moshi = Moshi.Builder()
-            .add(
-                PolymorphicJsonAdapterFactory.of(SearchItem::class.java, "type")
-                    .withSubtype(UserSearchResponse::class.java, "user")
-                    .withSubtype(PostSearchResponse::class.java, "post")
-            )
-            .add(KotlinJsonAdapterFactory())
-            .build()
-
-
         val cacheSize = 5L * 1024 * 1024
         cache = Cache(cacheDir, cacheSize)
 
@@ -165,11 +148,7 @@ class MainActivity : AppCompatActivity() {
             .addNetworkInterceptor(onlineCacheInterceptor())
             .build()
 
-        val retrofit = Retrofit.Builder()
-            .baseUrl(BuildConfig.BASE_URL)
-            .client(client)
-            .addConverterFactory(MoshiConverterFactory.create(moshi))
-            .build()
+        val retrofit = buildRetrofit(BuildConfig.BASE_URL, client)
 
         authService = retrofit.create(AuthService::class.java)
         profileService = retrofit.create(ProfileService::class.java)

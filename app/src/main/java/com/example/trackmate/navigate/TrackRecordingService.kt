@@ -13,9 +13,6 @@ import com.example.trackmate.R
 import com.example.trackmate.api.NewTravelRequest
 import com.example.trackmate.api.Track
 import com.example.trackmate.api.TrackPoint
-import com.example.trackmate.track.MAX_ACCURACY_METERS
-import com.example.trackmate.track.MAX_PLAUSIBLE_SPEED_MPS
-import com.example.trackmate.track.MIN_RELIABLE_DT_SECONDS
 import com.google.android.gms.location.*
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -23,7 +20,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
-import java.util.Locale
 
 class TrackRecordingService : Service() {
 
@@ -51,10 +47,14 @@ class TrackRecordingService : Service() {
             lastTravelData = null
         }
 
-        // Needed for more precise maximum speed calculation, need to discard bad quality points
-        private const val MAX_ACCURACY_METERS = 25f
-        private const val MIN_RELIABLE_DT_SECONDS = 1f
-        private const val MAX_PLAUSIBLE_SPEED_MPS = 138.89f // ~500 km/h
+        private val distance: FixDistance = { a, b ->
+            FloatArray(1).also { Location.distanceBetween(a.lat, a.lng, b.lat, b.lng, it) }[0]
+        }
+
+        private fun Location.toFix(time: Long) =
+            Fix(latitude, longitude, time, if (hasSpeed()) speed else null, if (hasAccuracy()) accuracy else null)
+
+        private fun fixesOf(points: List<Pair<Location, Long>>) = points.map { (location, time) -> location.toFix(time) }
     }
 
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
@@ -134,31 +134,16 @@ class TrackRecordingService : Service() {
         )
     }
 
-    private fun speedAtPointKmh(prev: Location?, curr: Location): Float {
-        val speedMps = when {
-            curr.hasSpeed() -> curr.speed
-            prev != null -> {
-                val dt = (curr.time - prev.time) / 1000f
-                val accurateEnough = (!prev.hasAccuracy() || prev.accuracy <= MAX_ACCURACY_METERS) &&
-                    (!curr.hasAccuracy() || curr.accuracy <= MAX_ACCURACY_METERS)
-                if (accurateEnough && dt >= MIN_RELIABLE_DT_SECONDS) prev.distanceTo(curr) / dt else null
-            }
-            else -> null
-        }
-        return if (speedMps != null && speedMps <= MAX_PLAUSIBLE_SPEED_MPS) speedMps * 3.6f else 0f
-    }
-
     private fun saveToJsonAsync() {
-        val points = pathPoints
+        val fixes = fixesOf(pathPoints)
         CoroutineScope(Dispatchers.IO).launch {
             val moshi = Moshi.Builder()
                 .add(KotlinJsonAdapterFactory())
                 .build()
             val adapter = moshi.adapter(Track::class.java)
 
-            val trackPointsList = points.mapIndexed { index, (location, time) ->
-                val prev = points.getOrNull(index - 1)?.first
-                TrackPoint(location.latitude, location.longitude, time, speedAtPointKmh(prev, location))
+            val trackPointsList = fixes.mapIndexed { index, fix ->
+                TrackPoint(fix.lat, fix.lng, fix.time, speedAtFixKmh(fixes.getOrNull(index - 1), fix, distance))
             }
 
             val trackData = Track(trackPointsList)
@@ -175,16 +160,15 @@ class TrackRecordingService : Service() {
         }
     }
 
-    private fun calculateDistanceMeters() =
-        pathPoints.zipWithNext { a, b -> a.first.distanceTo(b.first) }.sum()
-
     private fun sendTrackUpdate() {
+        val points = pathPoints
+        val fixes = fixesOf(points)
         val intent = Intent("com.example.trackmate.TRACK_UPDATE")
-        intent.putExtra("distance", calculateDistanceMeters() / 1000)
+        intent.putExtra("distance", travelledMeters(fixes, distance) / 1000)
         intent.putExtra("duration", (System.nanoTime() - startTime) / 1_000_000)
 
-        if (pathPoints.isNotEmpty()) {
-            val lastLocation = pathPoints.last().first
+        if (points.isNotEmpty()) {
+            val lastLocation = points.last().first
             intent.putExtra("lat", lastLocation.latitude)
             intent.putExtra("lng", lastLocation.longitude)
             if (lastLocation.hasBearing()) {
@@ -192,8 +176,7 @@ class TrackRecordingService : Service() {
             }
 
             // same speed as the saved track
-            val prevLocation = pathPoints.getOrNull(pathPoints.size - 2)?.first
-            intent.putExtra("speed", speedAtPointKmh(prevLocation, lastLocation))
+            intent.putExtra("speed", speedAtFixKmh(fixes.getOrNull(fixes.size - 2), fixes.last(), distance))
         }
 
         LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(intent)
@@ -206,55 +189,8 @@ class TrackRecordingService : Service() {
         if (discarded) return
         saveToJsonAsync()
 
-        lastTravelData = calculateTravelData()
+        lastTravelData = travelStats(fixesOf(pathPoints), distance)
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
-
-    private fun calculateTravelData(): NewTravelRequest? {
-        if (pathPoints.size < 2) return null
-
-        var distanceMeters = 0f
-        var maxSpeedMps = 0f
-
-        for (i in 1 until pathPoints.size) {
-            val (prev, t1) = pathPoints[i - 1]
-            val (curr, t2) = pathPoints[i]
-
-            distanceMeters += prev.distanceTo(curr)
-
-            val dt = (t2 - t1) / 1000f // seconds
-            val accurateEnough = (!prev.hasAccuracy() || prev.accuracy <= MAX_ACCURACY_METERS) &&
-                (!curr.hasAccuracy() || curr.accuracy <= MAX_ACCURACY_METERS)
-            val speedMps = when {
-                curr.hasSpeed() -> curr.speed
-                accurateEnough && dt >= MIN_RELIABLE_DT_SECONDS -> prev.distanceTo(curr) / dt
-                else -> null
-            }
-            if (speedMps != null && speedMps <= MAX_PLAUSIBLE_SPEED_MPS && speedMps > maxSpeedMps) {
-                maxSpeedMps = speedMps
-            }
-        }
-
-        val startTime = pathPoints.first().second
-        val endTime = pathPoints.last().second
-        val durationSec = (endTime - startTime) / 1000f
-
-        val distanceKm = distanceMeters / 1000f
-        val avgSpeedKmh = if (durationSec > 0) (distanceMeters / durationSec) * 3.6f else 0f
-        val maxSpeedKmh = maxSpeedMps * 3.6f
-
-        fun formatFloat(value: Float): Float {
-            return "%.2f".format(Locale.US, value).toFloat()
-        }
-
-        return NewTravelRequest(
-            id = -1,
-            time = formatFloat(durationSec),
-            averageSpeed = formatFloat(avgSpeedKmh),
-            maxSpeed = formatFloat(maxSpeedKmh),
-            distance = formatFloat(distanceKm)
-        )
-    }
-
 }

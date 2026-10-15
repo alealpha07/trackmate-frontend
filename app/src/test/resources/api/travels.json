@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1,
+    "trackId": 1,
+    "userId": 1,
+    "time": 754.2,
+    "dateTime": "2026-10-15T16:49:20.794Z",
+    "maxSpeed": 32.8,
+    "averageSpeed": 17.31,
+    "distance": 3.63,
+    "vehicle": "bicycle",
+    "Track": {
+      "name": "Val Taro loop"
+    },
+    "dateTimeString": "15/10/2026",
+    "name": "Val Taro loop"
+  }
+]

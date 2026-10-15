@@ -25,6 +25,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import retrofit2.Response
+import java.net.URI
+import java.net.URISyntaxException
 
 class PostsAdapter(
     private val onClick: (PostItem) -> Unit
@@ -221,9 +223,17 @@ fun sharePost(context: Context, post: PostItem) {
     context.startActivity(Intent.createChooser(intent, context.getString(R.string.post_share)))
 }
 
-fun parseSharedPostId(uri: Uri?): Int? {
-    if (uri == null || uri.host != Uri.parse(BuildConfig.BASE_URL).host) return null
-    val segments = uri.pathSegments
+fun parseSharedPostId(uri: Uri?): Int? = uri?.let { sharedPostId(it.toString(), BuildConfig.BASE_URL) }
+
+// takes a string, so it runs in unit tests without android.net.Uri
+fun sharedPostId(link: String, baseUrl: String): Int? {
+    val uri = try {
+        URI(link)
+    } catch (e: URISyntaxException) {
+        return null
+    }
+    if (uri.host == null || uri.host != URI(baseUrl).host) return null
+    val segments = uri.path.orEmpty().split("/").filter { it.isNotEmpty() }
     if (segments.size != 2 || segments[0] != SHARED_POST_PATH) return null
     return segments[1].toIntOrNull()
 }

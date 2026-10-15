@@ -89,18 +89,9 @@ import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import retrofit2.Call
-import java.math.RoundingMode
-import java.text.DecimalFormat
-import java.text.DecimalFormatSymbols
 import java.util.Locale
-import kotlin.math.abs
-import kotlin.math.asin
-import kotlin.math.cos
 import kotlin.math.max
-import kotlin.math.pow
 import kotlin.math.roundToInt
-import kotlin.math.sin
-import kotlin.math.sqrt
 
 private val DEFAULT_CENTER = GeoPoint(44.8015, 10.3279) // Parma
 private const val DEFAULT_ZOOM = 13.0
@@ -108,20 +99,13 @@ private const val MY_LOCATION_ZOOM = 14.0
 private const val MY_LOCATION_BUTTON_ZOOM = 16.0
 private const val SEARCH_MIN_CHARS = 3
 private const val SEARCH_DEBOUNCE_MS = 300L
-// same limit as the server
-private const val MAX_LEG_METERS = 50_000.0
 // percent over the shortest route, null for no limit
 private val MAX_DETOUR_STOPS = listOf(10, 15, 25, 50, null)
-private const val EARTH_RADIUS_METERS = 6_371_008.8
 // a few meters is just the road width
 private const val CONNECTOR_MIN_METERS = 10.0
 private const val SHEET_MAX_HEIGHT_FRACTION = 0.6
 private const val FIT_MAX_ZOOM = 16.0
 private const val FIT_PADDING_DP = 40
-
-data class PlanPoint(val lat: Double, val lng: Double, val label: String? = null)
-
-private class PlanError(message: String) : Exception(message)
 
 // phone version of the web planner
 class TrackPlanner : Fragment() {
@@ -568,11 +552,7 @@ class TrackPlanner : Fragment() {
         else -> getString(R.string.plan_stop, index)
     }
 
-    private fun pinLabel(row: Row): String = when (row) {
-        rows.first() -> "A"
-        rows.last() -> "B"
-        else -> rows.indexOf(row).toString()
-    }
+    private fun pinLabel(row: Row): String = pinLabel(rows.indexOf(row), rows.size)
 
     private fun renumberRows() {
         rows.forEachIndexed { index, row ->
@@ -668,17 +648,15 @@ class TrackPlanner : Fragment() {
 
     private fun routeProblem(): String? {
         rows.forEach { setTooFar(it, false) }
-        if (rows.first().point == null || rows.last().point == null) return null // nothing to say yet
-        if (rows.any { it.point == null }) return getString(R.string.plan_empty_stop)
-        for (i in 0 until rows.size - 1) {
-            val meters = haversineMeters(rows[i].point!!, rows[i + 1].point!!)
-            if (meters > MAX_LEG_METERS) {
-                setTooFar(rows[i], true)
-                setTooFar(rows[i + 1], true)
-                return getString(R.string.plan_leg_too_far, rowName(i), rowName(i + 1), formatNumber(meters / 1000, 0))
+        return when (val problem = routeProblem(rows.map { it.point })) {
+            null -> null
+            RouteProblem.EmptyStop -> getString(R.string.plan_empty_stop)
+            is RouteProblem.LegTooFar -> {
+                setTooFar(rows[problem.leg], true)
+                setTooFar(rows[problem.leg + 1], true)
+                getString(R.string.plan_leg_too_far, rowName(problem.leg), rowName(problem.leg + 1), formatNumber(problem.meters / 1000, 0))
             }
         }
-        return null
     }
 
     private fun setTooFar(row: Row, tooFar: Boolean) {
@@ -779,20 +757,7 @@ class TrackPlanner : Fragment() {
     private suspend fun readPlanStream(call: Call<ResponseBody>, onProgress: suspend (PlanProgress) -> Unit): PlannedRoute {
         val response = call.execute()
         if (!response.isSuccessful) throw PlanError(response.errorBody()?.string().orEmpty())
-        val adapter = moshi.adapter(PlanMessage::class.java)
-        var route: PlannedRoute? = null
-        response.body()!!.use { body ->
-            val source = body.source()
-            while (true) {
-                val line = source.readUtf8Line() ?: break
-                if (line.isBlank()) continue
-                val message = adapter.fromJson(line) ?: continue
-                message.error?.let { throw PlanError(it) }
-                message.route?.let { route = it }
-                message.progress?.let { if (it.total > 0) onProgress(it) }
-            }
-        }
-        return route ?: throw PlanError("")
+        return response.body()!!.use { readPlanMessages(it.source(), moshi.adapter(PlanMessage::class.java), onProgress) }
     }
 
     private fun showProgress(progress: PlanProgress) {
@@ -1097,40 +1062,4 @@ private fun ValueAnimator.doOnEnd(action: () -> Unit) {
     addListener(object : android.animation.AnimatorListenerAdapter() {
         override fun onAnimationEnd(animation: android.animation.Animator) = action()
     })
-}
-
-private fun formatCoordinates(point: PlanPoint) = String.format(Locale.US, "%.5f, %.5f", point.lat, point.lng)
-
-private fun pointText(point: PlanPoint?): String = point?.let { it.label ?: formatCoordinates(it) } ?: ""
-
-// accepts "44.8, 10.3", "44.8 10.3" and "44,8; 10,3"
-private fun parseCoordinates(text: String): PlanPoint? {
-    val match = Regex("""^(-?\d+(?:\.\d+)?)\s*[,;\s]\s*(-?\d+(?:\.\d+)?)$""").find(text)
-        ?: Regex("""^(-?\d+(?:,\d+)?)\s*[;\s]\s*(-?\d+(?:,\d+)?)$""").find(text)
-        ?: return null
-    val lat = match.groupValues[1].replace(",", ".").toDouble()
-    val lng = match.groupValues[2].replace(",", ".").toDouble()
-    if (abs(lat) > 90 || abs(lng) > 180) return null
-    return PlanPoint(lat, lng)
-}
-
-private fun haversineMeters(a: PlanPoint, b: PlanPoint): Double {
-    val rad = { deg: Double -> Math.toRadians(deg) }
-    val h = sin(rad(b.lat - a.lat) / 2).pow(2) +
-        cos(rad(a.lat)) * cos(rad(b.lat)) * sin(rad(b.lng - a.lng) / 2).pow(2)
-    return 2 * EARTH_RADIUS_METERS * asin(sqrt(h))
-}
-
-// like the web's Intl.NumberFormat
-private fun formatNumber(value: Double, minDecimals: Int): String =
-    DecimalFormat(if (minDecimals == 1) "#,##0.0" else "#,##0.#", DecimalFormatSymbols.getInstance())
-        .apply { roundingMode = RoundingMode.HALF_UP }
-        .format(value)
-
-private fun formatDistance(meters: Double) = "${formatNumber(meters / 1000, 1)} km"
-
-private fun formatDuration(seconds: Double): String {
-    val minutes = max(1, (seconds / 60).roundToInt())
-    if (minutes < 60) return "$minutes min"
-    return "${minutes / 60} h ${(minutes % 60).toString().padStart(2, '0')} min"
 }

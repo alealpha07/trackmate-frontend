@@ -1,0 +1,14 @@
+[
+  {
+    "senderId": 3,
+    "receiverId": 1,
+    "status": false,
+    "receiver": {
+      "id": 1,
+      "username": "giulia",
+      "bio": "Gravel and hills around Parma",
+      "level": 0,
+      "experience": 0
+    }
+  }
+]

@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1,
+    "trackId": 1,
+    "userId": 1,
+    "time": 754.2,
+    "dateTime": "2026-10-15T16:49:20.794Z",
+    "maxSpeed": 32.8,
+    "averageSpeed": 17.31,
+    "distance": 3.63,
+    "vehicle": "bicycle",
+    "Track": {
+      "name": "Val Taro loop"
+    },
+    "User": {
+      "username": "giulia"
+    },
+    "dateTimeString": "15/10/2026",
+    "name": "Val Taro loop",
+    "username": "giulia"
+  },
+  {
+    "id": 2,
+    "trackId": 1,
+    "userId": 2,
+    "time": 698.5,
+    "dateTime": "2026-10-15T16:49:20.813Z",
+    "maxSpeed": 35.1,
+    "averageSpeed": 18.7,
+    "distance": 3.63,
+    "vehicle": "bicycle",
+    "Track": {
+      "name": "Val Taro loop"
+    },
+    "User": {
+      "username": "marco"
+    },
+    "dateTimeString": "15/10/2026",
+    "name": "Val Taro loop",
+    "username": "marco"
+  }
+]

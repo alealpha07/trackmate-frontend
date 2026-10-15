@@ -1,0 +1,27 @@
+{
+  "id": 1,
+  "name": "Val Taro loop",
+  "vehicle": "bicycle",
+  "ownerId": 1,
+  "userBest": {
+    "id": 1,
+    "userId": 1,
+    "time": 754.2,
+    "maxSpeed": 32.8,
+    "averageSpeed": 17.31,
+    "username": "giulia",
+    "distance": 3.63,
+    "vehicle": "bicycle"
+  },
+  "overallBest": {
+    "id": 2,
+    "userId": 2,
+    "time": 698.5,
+    "maxSpeed": 35.1,
+    "averageSpeed": 18.7,
+    "username": "marco",
+    "distance": 3.63,
+    "vehicle": "bicycle"
+  },
+  "travelCount": 1
+}

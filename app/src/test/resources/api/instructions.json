@@ -1,0 +1,27 @@
+{
+  "vehicle": "bicycle",
+  "language": "de-DE",
+  "maneuvers": [
+    {
+      "type": 1,
+      "text": "de-DE: Head east.",
+      "streets": [],
+      "along": 0,
+      "length": 1000,
+      "time": 240,
+      "verbalPre": null,
+      "verbalPost": null
+    },
+    {
+      "type": 4,
+      "text": "de-DE: You have arrived.",
+      "streets": [],
+      "along": 789.3,
+      "length": 0,
+      "time": 0,
+      "verbalPre": null,
+      "verbalPost": null
+    }
+  ],
+  "speedLimits": []
+}
