@@ -45,6 +45,21 @@ https://client.stadiamaps.com/signup/).
 Debug builds connect to the backend at `http://10.0.2.2:3000`, which is your computer's localhost as seen from the
 emulator.
 
+## Credits and data licences
+
+- Map tiles © [Stadia Maps](https://stadiamaps.com/), map style © [OpenMapTiles](https://openmaptiles.org/), map data
+  © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), available under the Open Database License.
+- Routes are planned on OpenStreetMap data read through the [Overpass API](https://overpass-api.de/), on the instances
+  run by NextGIS OÜ and FOSSGIS e.V.
+- Turn-by-turn directions come from [Valhalla](https://github.com/valhalla/valhalla) on the FOSSGIS e.V. server.
+- Place search uses [Stadia Maps](https://stadiamaps.com/) and [Photon](https://photon.komoot.io/) by komoot.
+- Elevation data produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH
+  2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved. The organisations in charge
+  of the Copernicus programme by law or by delegation do not incur any liability for any use of the Copernicus
+  WorldDEM-30.
+
+The app shows them in Settings, with the open-source licences of its libraries.
+
 ## License
 
 MIT, see [LICENSE](LICENSE).
