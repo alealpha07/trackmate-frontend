@@ -207,6 +207,10 @@ class MainActivity : AppCompatActivity() {
                 binding.navView.visibility = View.GONE
                 supportActionBar?.setDisplayHomeAsUpEnabled(false)
             }
+            // also opened from the register form, before login
+            else if (destination.id == R.id.legal){
+                binding.navView.visibility = View.GONE
+            }
             else{
                 binding.navView.visibility = View.VISIBLE
             }

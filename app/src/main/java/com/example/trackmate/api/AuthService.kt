@@ -15,7 +15,8 @@ data class LoginRequest(
 data class RegisterRequest(
     val username: String,
     val password: String,
-    val confirmPassword: String
+    val confirmPassword: String,
+    val acceptTerms: Boolean
 )
 
 @JsonClass(generateAdapter = true)

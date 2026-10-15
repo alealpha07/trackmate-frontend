@@ -1,6 +1,7 @@
 package com.example.trackmate.profile
 
 import android.app.AlertDialog
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.provider.DocumentsContract
@@ -8,12 +9,22 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.Button
+import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
+import com.example.trackmate.BuildConfig
 import com.example.trackmate.MainActivity
 import com.example.trackmate.R
 import com.example.trackmate.api.ChangePasswordRequest
@@ -22,6 +33,9 @@ import com.example.trackmate.util.AppLanguage
 import com.example.trackmate.util.ThemeMode
 import com.example.trackmate.util.chooseLanguage
 import com.example.trackmate.util.chosenLanguage
+import com.example.trackmate.util.currentLanguage
+import com.example.trackmate.util.openLegalPage
+import com.example.trackmate.util.openUrl
 import com.example.trackmate.util.saveTheme
 import com.example.trackmate.util.savedTheme
 import com.example.trackmate.util.showAboveKeyboard
@@ -50,6 +64,8 @@ class Settings : Fragment() {
         view.findViewById<Button>(R.id.btnCredits).setOnClickListener {
             findNavController().navigate(R.id.credits)
         }
+        view.findViewById<Button>(R.id.btnPrivacy).setOnClickListener { openLegalPage("privacy") }
+        view.findViewById<Button>(R.id.btnTerms).setOnClickListener { openLegalPage("terms") }
         view.findViewById<Button>(R.id.btnTheme).apply {
             text = getString(R.string.settings_value, getString(R.string.settings_theme), getString(savedTheme(context).label))
             setOnClickListener { showThemeDialog() }
@@ -244,3 +260,61 @@ class Settings : Fragment() {
 }
 
 class Credits : Fragment(R.layout.fragment_credits)
+
+// the privacy notice or the terms, loaded from the server so the texts exist only there
+class LegalPage : Fragment(R.layout.fragment_legal) {
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        val page = requireArguments().getString("page") ?: "privacy"
+        showTitle(page)
+
+        val webView = view.findViewById<WebView>(R.id.webView)
+        val progress = view.findViewById<ProgressBar>(R.id.progress)
+        val error = view.findViewById<TextView>(R.id.tvError)
+        val back = requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, false) { webView.goBack() }
+
+        webView.setBackgroundColor(Color.TRANSPARENT)
+        webView.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                val uri = request.url
+                val path = uri.path?.removePrefix("/")
+                if (uri.host == SERVER.host && (path == "privacy" || path == "terms")) {
+                    view.loadUrl(legalUrl(path))
+                } else {
+                    requireContext().openUrl(uri.toString())
+                }
+                return true
+            }
+
+            override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) {
+                back.isEnabled = view.canGoBack()
+                url?.toUri()?.path?.removePrefix("/")?.let(::showTitle)
+            }
+
+            override fun onPageFinished(view: WebView, url: String?) {
+                progress.visibility = View.GONE
+            }
+
+            override fun onReceivedError(view: WebView, request: WebResourceRequest, err: WebResourceError) {
+                if (!request.isForMainFrame) return
+                webView.visibility = View.GONE
+                error.visibility = View.VISIBLE
+            }
+        }
+        webView.loadUrl(legalUrl(page))
+    }
+
+    // the pages link to each other, so the title follows the one shown
+    private fun showTitle(page: String) {
+        if (!isAdded) return
+        (activity as AppCompatActivity).supportActionBar?.title =
+            getString(if (page == "terms") R.string.legal_terms else R.string.legal_privacy)
+    }
+
+    private companion object {
+        val SERVER: Uri = BuildConfig.BASE_URL.toUri()
+
+        // app=1 leaves out the web header and footer
+        fun legalUrl(page: String) = "${BuildConfig.BASE_URL}/$page?lang=${currentLanguage().tag}&app=1"
+    }
+}

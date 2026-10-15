@@ -178,6 +178,11 @@
     <string name="auth_login">Log in</string>
     <string name="auth_register">Register</string>
     <string name="auth_switch_to_register">No account? Register here</string>
+    <string name="auth_accept_terms">I am at least 16 years old and accept the terms of use</string>
+    <string name="legal_terms">Terms of use</string>
+    <string name="legal_privacy">Privacy notice</string>
+    <string name="legal_load_failed">Couldn\'t load the page, check your connection.</string>
+    <string name="link_no_app">No app can open this link</string>
     <string name="auth_switch_to_login">Already have an account? Log in here</string>
     <!-- Common -->
     <string name="dialog_yes">Yes</string>

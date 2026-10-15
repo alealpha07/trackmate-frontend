@@ -22,6 +22,32 @@
         style="@style/Widget.MaterialComponents.Button.TextButton" />
 
     <Button
+        android:id="@+id/btnPrivacy"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:gravity="start|center_vertical"
+        android:text="@string/legal_privacy"
+        app:icon="@drawable/ic_privacy_24"
+        app:layout_constraintTop_toBottomOf="@id/btnCredits"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        style="@style/Widget.MaterialComponents.Button.TextButton" />
+
+    <Button
+        android:id="@+id/btnTerms"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:gravity="start|center_vertical"
+        android:text="@string/legal_terms"
+        app:icon="@drawable/ic_terms_24"
+        app:layout_constraintTop_toBottomOf="@id/btnPrivacy"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        style="@style/Widget.MaterialComponents.Button.TextButton" />
+
+    <Button
         android:id="@+id/btnTheme"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -29,7 +55,7 @@
         android:gravity="start|center_vertical"
         android:text="@string/settings_theme"
         app:icon="@drawable/ic_theme_24"
-        app:layout_constraintTop_toBottomOf="@id/btnCredits"
+        app:layout_constraintTop_toBottomOf="@id/btnTerms"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         style="@style/Widget.MaterialComponents.Button.TextButton" />

@@ -157,6 +157,11 @@
     <string name="auth_login">Accedi</string>
     <string name="auth_register">Registrati</string>
     <string name="auth_switch_to_register">Non hai un account? Registrati qui</string>
+    <string name="auth_accept_terms">Ho almeno 16 anni e accetto i termini d\'uso</string>
+    <string name="legal_terms">Termini d\'uso</string>
+    <string name="legal_privacy">Informativa sulla privacy</string>
+    <string name="legal_load_failed">Impossibile caricare la pagina, controlla la connessione.</string>
+    <string name="link_no_app">Nessuna app può aprire questo link</string>
     <string name="auth_switch_to_login">Hai già un account? Accedi qui</string>
     <string name="dialog_yes">Sì</string>
     <string name="dialog_confirm">Conferma</string>

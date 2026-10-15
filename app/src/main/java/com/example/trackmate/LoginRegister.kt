@@ -13,6 +13,7 @@ import com.example.trackmate.api.AuthService
 import com.example.trackmate.api.LoginRequest
 import com.example.trackmate.api.RegisterRequest
 import com.example.trackmate.api.UserResponse
+import com.example.trackmate.util.openLegalPage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -26,6 +27,7 @@ class LoginRegister : Fragment() {
     private lateinit var etUsername: EditText
     private lateinit var etPassword: EditText
     private lateinit var etConfirmPassword: EditText
+    private lateinit var cbAcceptTerms: CheckBox
     private lateinit var btnSubmit: Button
     private lateinit var tvToggleMode: TextView
     private lateinit var loginFormGroup: Group
@@ -44,6 +46,7 @@ class LoginRegister : Fragment() {
         etUsername = view.findViewById(R.id.etUsername)
         etPassword = view.findViewById(R.id.etPassword)
         etConfirmPassword = view.findViewById(R.id.etConfirmPassword)
+        cbAcceptTerms = view.findViewById(R.id.cbAcceptTerms)
         btnSubmit = view.findViewById(R.id.btnSubmit)
         tvToggleMode = view.findViewById(R.id.tvToggleMode)
         loginFormGroup = view.findViewById(R.id.loginFormGroup)
@@ -54,6 +57,11 @@ class LoginRegister : Fragment() {
             isRegisterMode = !isRegisterMode
             updateUIForMode()
         }
+        cbAcceptTerms.setOnCheckedChangeListener { _, _ -> updateUIForMode() }
+        view.findViewById<TextView>(R.id.tvTerms).setOnClickListener { openLegalPage("terms") }
+        view.findViewById<TextView>(R.id.tvPrivacy).setOnClickListener { openLegalPage("privacy") }
+        // back from the terms page keeps the register form
+        updateUIForMode()
 
         btnSubmit.setOnClickListener {
             val username = etUsername.text.toString().trim()
@@ -61,7 +69,7 @@ class LoginRegister : Fragment() {
             val confirmPassword = etConfirmPassword.text.toString().trim()
 
             if (isRegisterMode) {
-                registerUser(username, password, confirmPassword)
+                registerUser(username, password, confirmPassword, cbAcceptTerms.isChecked)
             } else {
                 loginUser(username, password)
             }
@@ -94,6 +102,8 @@ class LoginRegister : Fragment() {
 
     private fun updateUIForMode() {
         etConfirmPassword.visibility = if (isRegisterMode) View.VISIBLE else View.GONE
+        cbAcceptTerms.visibility = if (isRegisterMode) View.VISIBLE else View.GONE
+        btnSubmit.isEnabled = !isRegisterMode || cbAcceptTerms.isChecked
         btnSubmit.setText(if (isRegisterMode) R.string.auth_register else R.string.auth_login)
         tvToggleMode.setText(if (isRegisterMode) R.string.auth_switch_to_login else R.string.auth_switch_to_register)
     }
@@ -128,11 +138,11 @@ class LoginRegister : Fragment() {
         }
     }
 
-    private fun registerUser(username: String, password: String, confirmPassword: String) {
+    private fun registerUser(username: String, password: String, confirmPassword: String, acceptTerms: Boolean) {
         apiCallCoroutine.launch {
             try {
                 val response: Response<ResponseBody> = api.register(
-                    RegisterRequest(username, password, confirmPassword)
+                    RegisterRequest(username, password, confirmPassword, acceptTerms)
                 )
                 if (!response.isSuccessful) {
                     val errorMsg = response.errorBody()?.string() ?: response.message()

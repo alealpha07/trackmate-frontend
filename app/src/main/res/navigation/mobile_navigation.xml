@@ -99,6 +99,16 @@
         android:label="@string/credits_title"
         tools:layout="@layout/fragment_credits" />
     <fragment
+        android:id="@+id/legal"
+        android:name="com.example.trackmate.profile.LegalPage"
+        android:label="@string/legal_privacy"
+        tools:layout="@layout/fragment_legal">
+        <argument
+            android:name="page"
+            app:argType="string"
+            android:defaultValue="privacy" />
+    </fragment>
+    <fragment
         android:id="@+id/profileEdit"
         android:name="com.example.trackmate.profile.ProfileEdit"
         android:label="@string/profile_edit"

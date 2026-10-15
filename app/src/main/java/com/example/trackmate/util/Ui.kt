@@ -1,11 +1,20 @@
 package com.example.trackmate.util
 
 import android.app.AlertDialog
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
 import android.graphics.BitmapFactory
 import android.util.Log
 import android.view.WindowManager
 import android.widget.ImageView
+import android.widget.Toast
+import androidx.core.net.toUri
+import androidx.core.os.bundleOf
+import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import com.example.trackmate.MainActivity
+import com.example.trackmate.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -19,6 +28,19 @@ fun AlertDialog.Builder.showAboveKeyboard(): AlertDialog =
         dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         dialog.show()
     }
+
+fun Context.openUrl(url: String) {
+    try {
+        startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
+    } catch (e: ActivityNotFoundException) {
+        Toast.makeText(this, R.string.link_no_app, Toast.LENGTH_SHORT).show()
+    }
+}
+
+// page is "privacy" or "terms"
+fun Fragment.openLegalPage(page: String) {
+    findNavController().navigate(R.id.legal, bundleOf("page" to page))
+}
 
 fun ImageView.loadProfileImage(userId: Int, activity: MainActivity) {
     CoroutineScope(Dispatchers.IO).launch {
