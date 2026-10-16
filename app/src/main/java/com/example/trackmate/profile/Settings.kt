@@ -101,7 +101,8 @@ class Settings : Fragment() {
             R.id.loginRegister,
             null,
             NavOptions.Builder()
-                .setPopUpTo(R.id.settings, true)
+                // nothing of the old session stays under the login screen
+                .setPopUpTo(R.id.mobile_navigation, true)
                 .build()
         )
     }

@@ -28,13 +28,17 @@ import com.example.trackmate.databinding.FragmentSearchBinding
 import com.example.trackmate.databinding.ItemPostSearchResultBinding
 import com.example.trackmate.databinding.ItemUserSearchResultBinding
 import com.example.trackmate.posts.configurePostView
-import com.example.trackmate.profile.BookmarksDirections
 import androidx.recyclerview.widget.RecyclerView
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import retrofit2.Response
+import java.io.IOException
 
 class SearchAdapter(
     private val onUserClick: (Int) -> Unit,
@@ -156,6 +160,9 @@ class SearchAdapter(
 }
 
 
+private const val SEARCH_DEBOUNCE_MS = 300L
+private const val SEARCH_MIN_CHARS = 2
+
 class Search : Fragment() {
     private lateinit var adapter: SearchAdapter
     private lateinit var api: SearchService
@@ -163,6 +170,7 @@ class Search : Fragment() {
     private var _binding: FragmentSearchBinding? = null
     private val binding get() = _binding!!
     private val apiCallCoroutine = CoroutineScope(Dispatchers.IO)
+    private var searchJob: Job? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -199,10 +207,17 @@ class Search : Fragment() {
         binding.searchEditText.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                if (s != null && s.length >= 2) {
-                    fetchSearchResults(s.toString())
-                } else {
+                searchJob?.cancel()
+                val text = s?.toString()?.trim().orEmpty()
+                if (text.length < SEARCH_MIN_CHARS) {
                     adapter.submitList(emptyList())
+                    showMessage(null)
+                    return
+                }
+                // one request when typing pauses, not one per key
+                searchJob = viewLifecycleOwner.lifecycleScope.launch {
+                    delay(SEARCH_DEBOUNCE_MS)
+                    fetchSearchResults(text)
                 }
             }
 
@@ -210,25 +225,30 @@ class Search : Fragment() {
         })
     }
 
-    private fun fetchSearchResults(query: String) {
-        val sanitizedQuery = query.replace("[^a-zA-Z0-9]".toRegex(), "")
-
-        apiCallCoroutine.launch {
-            try {
-                val results: Response<List<SearchItem>> = api.search(sanitizedQuery)
-                if (results.isSuccessful && results.body() != null) {
-                    withContext(Dispatchers.Main) {
-                        adapter.submitList(results.body()!!)
-                    }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        adapter.submitList(emptyList())
-                    }
-                }
-            } catch (e: Exception) {
-                Log.d("API-ERROR", e.stackTraceToString())
+    private suspend fun fetchSearchResults(query: String) {
+        try {
+            val results: Response<List<SearchItem>> = api.search(query)
+            val items = results.body()
+            if (results.isSuccessful && items != null) {
+                adapter.submitList(items)
+                showMessage(if (items.isEmpty()) getString(R.string.search_no_results) else null)
+            } else {
+                adapter.submitList(emptyList())
+                showMessage(results.errorBody()?.string()?.takeIf { it.isNotBlank() } ?: getString(R.string.error_generic))
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.d("API-ERROR", e.stackTraceToString())
+            adapter.submitList(emptyList())
+            showMessage(getString(if (e is IOException) R.string.error_offline else R.string.error_generic))
         }
+    }
+
+    private fun showMessage(text: String?) {
+        val message = _binding?.searchMessage ?: return
+        message.text = text
+        message.visibility = if (text == null) View.GONE else View.VISIBLE
     }
 
     private fun onUserClicked(userId: Int) {
@@ -245,7 +265,7 @@ class Search : Fragment() {
                         val action =
                             SearchDirections.actionSearchToUserProfile2(response.body()!!.userId)
                         val navAction =
-                            BookmarksDirections.actionBookmarksToTrackNavigation(response.body()!!.trackId)
+                            SearchDirections.actionSearchToTrackNavigation(response.body()!!.trackId)
                         val dialog = AlertDialog.Builder(requireContext())
                             .setView(dialogView).create()
                         dialogView.findViewById<TextView>(R.id.username).setOnClickListener {

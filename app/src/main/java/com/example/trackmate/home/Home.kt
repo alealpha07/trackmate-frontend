@@ -33,6 +33,7 @@ import com.example.trackmate.api.PostService
 import com.example.trackmate.posts.PostImagesAdapter
 import com.example.trackmate.posts.configurePostView
 import com.example.trackmate.posts.sharePost
+import com.example.trackmate.util.showLoadError
 import okhttp3.ResponseBody
 
 class FeedPostsAdapter(
@@ -308,9 +309,10 @@ class Home : Fragment() {
                     }
                     trendingOffset += pageSize
                 }
-                isLoading = false
             } catch (e: Exception) {
-                Log.d("API-ERROR", e.stackTraceToString())
+                showLoadError(e)
+            } finally {
+                isLoading = false
             }
         }
 
@@ -337,9 +339,10 @@ class Home : Fragment() {
                     }
                     friendsOffset += pageSize
                 }
-                isLoading = false
             } catch (e: Exception) {
-                Log.d("API-ERROR", e.stackTraceToString())
+                showLoadError(e)
+            } finally {
+                isLoading = false
             }
         }
     }

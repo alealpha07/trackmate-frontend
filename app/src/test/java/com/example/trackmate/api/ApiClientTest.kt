@@ -109,6 +109,13 @@ class ApiClientTest {
     }
 
     @Test
+    fun searchTextKeepsSpacesAndAccents() = runTest {
+        answer("search.json")
+        service<SearchService>().search("val taro città")
+        assertEquals("/search?text=val%20taro%20citt%C3%A0&sortBy=score", server.takeRequest().path)
+    }
+
+    @Test
     fun sortedByDistanceTheScoresAreKilometers() = runTest {
         answer("search_distance.json")
         val results = service<SearchService>().search("a", sortBy = "distance").body()!!

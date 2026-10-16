@@ -27,6 +27,7 @@ import com.example.trackmate.api.NewTravelRequest
 import com.example.trackmate.api.QuestService
 import com.example.trackmate.api.QuestType
 import com.example.trackmate.map.AnimatedMyLocationOverlay
+import com.example.trackmate.map.DEFAULT_MAP_CENTER
 import com.example.trackmate.map.DEFAULT_MAP_ZOOM
 import com.example.trackmate.map.DRAG_RESUME_FOLLOW_TIME
 import com.example.trackmate.map.MapCompassController
@@ -43,6 +44,7 @@ import com.example.trackmate.track.TrackNavigationService
 import com.example.trackmate.util.Vehicle
 import com.example.trackmate.util.hasLocationPermission
 import com.example.trackmate.util.locationGranted
+import com.example.trackmate.util.onLocationDenied
 import com.example.trackmate.util.requestLocationWithRationale
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
@@ -91,8 +93,7 @@ class Navigate : Fragment() {
                 enableMyLocation()
                 if (!TrackRecordingService.isRecording) startIdleSpeedUpdates()
             } else {
-                Toast.makeText(requireContext(), R.string.location_denied, Toast.LENGTH_SHORT)
-                    .show()
+                onLocationDenied()
             }
         }
 
@@ -267,6 +268,7 @@ class Navigate : Fragment() {
         mapView.setTileSource(tileSourceFor(requireContext(), mapStyle))
         mapView.setMultiTouchControls(true)
         mapView.controller.setZoom(DEFAULT_MAP_ZOOM)
+        mapView.controller.setCenter(DEFAULT_MAP_CENTER)
 
         MapCredit(this, view.findViewById(R.id.mapCredit), mapView)
 

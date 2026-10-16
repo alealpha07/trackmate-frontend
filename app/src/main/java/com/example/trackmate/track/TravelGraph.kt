@@ -159,9 +159,8 @@ class TravelGraph : Fragment() {
         binding.txtTrackName.text = trackDetails.name
         binding.txtTrackVehicle.showTrackVehicle(Vehicle.fromId(trackDetails.vehicle))
 
-        val trackLength = trackDetails.overallBest?.distance
-        binding.txtTrackLength.text = if (trackLength != null) {
-            getString(R.string.track_length, "%.2f".format(trackLength))
+        binding.txtTrackLength.text = if (args.trackKm >= 0) {
+            getString(R.string.track_length, "%.2f".format(args.trackKm))
         } else {
             getString(R.string.track_length_missing)
         }
@@ -332,6 +331,8 @@ class TravelGraph : Fragment() {
         }
 
         chart.axisLeft.apply {
+            // bars from 0, or small differences look huge
+            axisMinimum = 0f
             textSize = 12f
             this.textColor = textColor
             valueFormatter = object : com.github.mikephil.charting.formatter.ValueFormatter() {

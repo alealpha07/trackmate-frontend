@@ -98,6 +98,15 @@
     <string name="track_save_failed">Impossibile salvare il percorso: controlla la connessione e riprova.</string>
     <string name="track_keep">Tieni</string>
     <string name="error_generic">Qualcosa è andato storto, riprova.</string>
+    <string name="error_offline">Impossibile raggiungere il server, controlla la connessione e riprova.</string>
+    <string name="search_no_results">Nessun utente o post trovato</string>
+    <string name="quests_empty">Nessuna missione al momento. Le nuove missioni giornaliere arrivano ogni giorno a mezzanotte.</string>
+    <string name="location_blocked_message">La posizione è bloccata per TrackMate. Per mostrarti sulla mappa, registrare e navigare, consentila nelle impostazioni dell\'app.</string>
+    <string name="location_open_settings">Apri impostazioni</string>
+    <string name="navigation_summary">Tempo %1$s · %2$s km · media %3$s km/h</string>
+    <string name="navigation_stop">Interrompi</string>
+    <string name="navigation_keep_going">Continua</string>
+    <string name="friend_remove_confirm">Rimuovere %1$s dagli amici?</string>
     <string name="settings_change_password">Cambia password</string>
     <string name="settings_export">Scarica i miei dati</string>
     <string name="settings_delete_account">Elimina account</string>

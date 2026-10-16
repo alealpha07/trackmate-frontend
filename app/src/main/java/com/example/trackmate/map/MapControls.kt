@@ -15,6 +15,8 @@ import kotlin.math.abs
 import kotlin.math.pow
 
 const val DEFAULT_MAP_ZOOM = 16.0
+// shown until the location is known, instead of 0,0 in the sea
+val DEFAULT_MAP_CENTER = GeoPoint(44.8015, 10.3279) // Parma
 const val TRACKING_ZOOM_LEVEL = 18.5
 const val FAST_TRACKING_ZOOM_LEVEL = 16.0
 const val DRAG_RESUME_FOLLOW_TIME: Long = 5000

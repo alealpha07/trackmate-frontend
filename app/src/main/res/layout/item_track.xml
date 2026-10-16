@@ -25,7 +25,10 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toEndOf="@id/imgVehicle"
         android:layout_marginStart="8dp"
-        app:layout_constraintEnd_toStartOf="@id/btnEdit" />
+        android:layout_marginEnd="8dp"
+        android:maxLines="2"
+        android:ellipsize="end"
+        app:layout_constraintEnd_toStartOf="@id/btnDelete" />
 
     <ImageButton
         android:id="@+id/btnDelete"

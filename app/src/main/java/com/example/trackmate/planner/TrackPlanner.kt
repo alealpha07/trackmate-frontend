@@ -43,6 +43,7 @@ import com.example.trackmate.api.PlanRequest
 import com.example.trackmate.api.PlannedRoute
 import com.example.trackmate.api.PlannedTrackFile
 import com.example.trackmate.map.AnimatedMyLocationOverlay
+import com.example.trackmate.map.DEFAULT_MAP_CENTER
 import com.example.trackmate.map.MapCredit
 import com.example.trackmate.map.applyPrimaryLocationIcons
 import com.example.trackmate.map.createLetterMarkerIcon
@@ -93,7 +94,6 @@ import java.util.Locale
 import kotlin.math.max
 import kotlin.math.roundToInt
 
-private val DEFAULT_CENTER = GeoPoint(44.8015, 10.3279) // Parma
 private const val DEFAULT_ZOOM = 13.0
 private const val MY_LOCATION_ZOOM = 14.0
 private const val MY_LOCATION_BUTTON_ZOOM = 16.0
@@ -101,6 +101,8 @@ private const val SEARCH_MIN_CHARS = 3
 private const val SEARCH_DEBOUNCE_MS = 300L
 // percent over the shortest route, null for no limit
 private val MAX_DETOUR_STOPS = listOf(10, 15, 25, 50, null)
+// same limit as the server
+private const val MAX_STOPS = 10
 // a few meters is just the road width
 private const val CONNECTOR_MIN_METERS = 10.0
 private const val SHEET_MAX_HEIGHT_FRACTION = 0.6
@@ -235,7 +237,7 @@ class TrackPlanner : Fragment() {
         mapView.setTileSource(tileSourceFor(context, getSavedMapStyle(context)))
         mapView.setMultiTouchControls(true)
         mapView.controller.setZoom(mapZoom)
-        mapView.controller.setCenter(mapCenter ?: DEFAULT_CENTER)
+        mapView.controller.setCenter(mapCenter ?: DEFAULT_MAP_CENTER)
         mapView.mapOrientation = mapOrientation
 
         // bottom of the overlays so markers get taps first
@@ -574,15 +576,21 @@ class TrackPlanner : Fragment() {
     private fun firstEmptyRow(): Row? = rows.firstOrNull { it.point == null }
 
     private fun addStop() {
+        if (rows.size - 2 >= MAX_STOPS) return
         val row = Row()
         rows.add(rows.size - 1, row)
         addRowView(row, rows.size - 2)
         renumberRows()
+        updateAddStop()
         activeRow = row
         row.input.requestFocus()
         requireContext().getSystemService(InputMethodManager::class.java)
             .showSoftInput(row.input, InputMethodManager.SHOW_IMPLICIT)
         routeChanged()
+    }
+
+    private fun updateAddStop() {
+        view?.findViewById<View>(R.id.btnAddStop)?.isEnabled = rows.size - 2 < MAX_STOPS
     }
 
     private fun removeStop(row: Row) {
@@ -591,6 +599,7 @@ class TrackPlanner : Fragment() {
         pointList.removeView(row.element)
         rows.remove(row)
         renumberRows()
+        updateAddStop()
         if (activeRow === row) activeRow = firstEmptyRow() ?: rows.last()
         routeChanged()
     }
@@ -710,6 +719,10 @@ class TrackPlanner : Fragment() {
         txtStatus.text = text
         if (isError) txtStatus.setTextColor(errorColor()) else txtStatus.setTextColor(mutedText)
         txtStatus.isVisible = text.isNotEmpty()
+        // the status sits under the Plan button, often below the sheet's edge
+        if (isError && text.isNotEmpty()) {
+            sheetScroll.post { sheetScroll.smoothScrollTo(0, maxOf(0, txtStatus.bottom - sheetScroll.height)) }
+        }
     }
 
     private fun plan() {

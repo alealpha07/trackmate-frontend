@@ -26,6 +26,7 @@ import com.example.trackmate.api.TrackInstructions
 import com.example.trackmate.api.TrackService
 import com.example.trackmate.api.TravelStatistics
 import com.example.trackmate.map.AnimatedMyLocationOverlay
+import com.example.trackmate.map.DEFAULT_MAP_CENTER
 import com.example.trackmate.map.DEFAULT_MAP_ZOOM
 import com.example.trackmate.map.DRAG_RESUME_FOLLOW_TIME
 import com.example.trackmate.map.FollowZoom
@@ -60,7 +61,9 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import com.example.trackmate.util.hasLocationPermission
 import com.example.trackmate.util.locationGranted
+import com.example.trackmate.util.onLocationDenied
 import com.example.trackmate.util.requestLocationWithRationale
+import com.example.trackmate.util.showLoadError
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.roundToInt
@@ -74,6 +77,8 @@ class TrackNavigation : Fragment() {
     private lateinit var txtTrackName: TextView
     private lateinit var txtTrackVehicle: TextView
     private lateinit var txtTrackLength: TextView
+    // the details page shows the same length, -1 until the track has loaded
+    private var trackKm = -1f
     private lateinit var txtUserBest: TextView
     private lateinit var txtUserBestAvg: TextView
     private lateinit var txtUserBestSpd: TextView
@@ -123,8 +128,7 @@ class TrackNavigation : Fragment() {
                 enableMyLocation()
                 if (!TrackNavigationService.isNavigating) startIdleSpeedUpdates()
             } else {
-                Toast.makeText(requireContext(), R.string.location_denied, Toast.LENGTH_SHORT)
-                    .show()
+                onLocationDenied()
             }
         }
 
@@ -326,7 +330,7 @@ class TrackNavigation : Fragment() {
         )
         btnRecord.setOnClickListener { if (TrackNavigationService.isNavigating) stopNavigation() else startNavigation() }
         btnMoreDetails.setOnClickListener{
-            val action = TrackNavigationDirections.actionTrackNavigationToTravelGraph(args.trackId)
+            val action = TrackNavigationDirections.actionTrackNavigationToTravelGraph(args.trackId, trackKm)
             findNavController().navigate(action)
         }
         return view
@@ -340,6 +344,7 @@ class TrackNavigation : Fragment() {
         mapView.setTileSource(tileSourceFor(requireContext(), mapStyle))
         mapView.setMultiTouchControls(true)
         mapView.controller.setZoom(DEFAULT_MAP_ZOOM)
+        mapView.controller.setCenter(DEFAULT_MAP_CENTER)
         followZoom = FollowZoom(mapView)
 
         MapCredit(this, view.findViewById(R.id.mapCredit), mapView)
@@ -421,7 +426,7 @@ class TrackNavigation : Fragment() {
                 }
 
             } catch (e: Exception) {
-                Log.d("API-ERROR", e.stackTraceToString())
+                showLoadError(e)
             }
         }
     }
@@ -529,6 +534,7 @@ class TrackNavigation : Fragment() {
             )
             distance += results[0]
         }
+        trackKm = (distance / 1000).toFloat()
         txtTrackLength.text = getString(R.string.track_length, "%.2f".format(distance / 1000))
         updateStartButton()
     }
@@ -687,20 +693,31 @@ class TrackNavigation : Fragment() {
 
     private fun stopNavigation(isFinished: Boolean = false) {
         if (isFinished) {
+            val travel = TrackNavigationService.getLastNavigationData()
             saveTravel()
             endNavigation()
-            AlertDialog.Builder(requireContext())
+            val dialog = AlertDialog.Builder(requireContext())
                 .setTitle(R.string.navigation_completed)
                 .setPositiveButton(android.R.string.ok, null)
-                .show()
+            if (travel != null) {
+                dialog.setMessage(
+                    getString(
+                        R.string.navigation_summary,
+                        formatTime(travel.time),
+                        "%.2f".format(travel.distance),
+                        "%.1f".format(travel.averageSpeed)
+                    )
+                )
+            }
+            dialog.show()
         } else {
             AlertDialog.Builder(requireContext())
                 .setTitle(R.string.navigation_cancel)
                 .setMessage(R.string.navigation_cancel_message)
-                .setPositiveButton(R.string.dialog_confirm) { _, _ ->
+                .setPositiveButton(R.string.navigation_stop) { _, _ ->
                     endNavigation()
                 }
-                .setNegativeButton(R.string.dialog_cancel, null)
+                .setNegativeButton(R.string.navigation_keep_going, null)
                 .show()
         }
     }

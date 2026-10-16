@@ -113,6 +113,15 @@
     <string name="track_save_failed">Couldn\'t save the track: check your connection and try again.</string>
     <string name="track_keep">Keep</string>
     <string name="error_generic">Something went wrong, try again.</string>
+    <string name="error_offline">Can\'t reach the server, check your connection and try again.</string>
+    <string name="search_no_results">No users or posts found</string>
+    <string name="quests_empty">No quests right now. New daily quests arrive every day at midnight.</string>
+    <string name="location_blocked_message">Location is blocked for TrackMate. To show you on the map, record and navigate, allow it in the app settings.</string>
+    <string name="location_open_settings">Open settings</string>
+    <string name="navigation_summary">Time %1$s · %2$s km · average %3$s km/h</string>
+    <string name="navigation_stop">Stop</string>
+    <string name="navigation_keep_going">Keep going</string>
+    <string name="friend_remove_confirm">Remove %1$s from your friends?</string>
     <!-- Account and privacy -->
     <string name="settings_change_password">Change password</string>
     <string name="settings_export">Download my data</string>

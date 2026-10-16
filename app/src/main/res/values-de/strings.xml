@@ -98,6 +98,15 @@
     <string name="track_save_failed">Die Strecke konnte nicht gespeichert werden: prüfe deine Verbindung und versuche es erneut.</string>
     <string name="track_keep">Behalten</string>
     <string name="error_generic">Etwas ist schiefgelaufen, versuche es erneut.</string>
+    <string name="error_offline">Der Server ist nicht erreichbar, prüfe deine Verbindung und versuche es erneut.</string>
+    <string name="search_no_results">Keine Nutzer oder Beiträge gefunden</string>
+    <string name="quests_empty">Gerade keine Quests. Neue tägliche Quests gibt es jeden Tag um Mitternacht.</string>
+    <string name="location_blocked_message">Der Standort ist für TrackMate blockiert. Um dich auf der Karte zu zeigen, aufzuzeichnen und zu navigieren, erlaube ihn in den App-Einstellungen.</string>
+    <string name="location_open_settings">Einstellungen öffnen</string>
+    <string name="navigation_summary">Zeit %1$s · %2$s km · Schnitt %3$s km/h</string>
+    <string name="navigation_stop">Beenden</string>
+    <string name="navigation_keep_going">Weiterfahren</string>
+    <string name="friend_remove_confirm">%1$s aus deinen Freunden entfernen?</string>
     <string name="settings_change_password">Passwort ändern</string>
     <string name="settings_export">Meine Daten herunterladen</string>
     <string name="settings_delete_account">Konto löschen</string>

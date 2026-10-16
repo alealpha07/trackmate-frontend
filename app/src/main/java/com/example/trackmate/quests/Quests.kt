@@ -20,6 +20,7 @@ import com.example.trackmate.api.QuestResponse
 import com.example.trackmate.api.QuestService
 import com.example.trackmate.util.Vehicle
 import com.example.trackmate.util.bindVehicle
+import com.example.trackmate.util.showLoadError
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -72,6 +73,7 @@ class Quests : Fragment() {
     private lateinit var levelBar1: ProgressBar
     private lateinit var levelProgressBar: ProgressBar
     private lateinit var questRecyclerView: RecyclerView
+    private lateinit var questsEmpty: TextView
     private lateinit var questAdapter: QuestAdapter
     private lateinit var api: QuestService
     private lateinit var authApi: AuthService
@@ -90,6 +92,7 @@ class Quests : Fragment() {
         levelBar1 = view.findViewById(R.id.level_bar_1)
         levelProgressBar = view.findViewById(R.id.level_progress_bar)
         questRecyclerView = view.findViewById(R.id.questRecyclerView)
+        questsEmpty = view.findViewById(R.id.questsEmpty)
         questRecyclerView.layoutManager = LinearLayoutManager(requireContext())
         api = (activity as MainActivity).questService
         authApi = (activity as MainActivity).authService
@@ -152,10 +155,11 @@ class Quests : Fragment() {
                     val questList = questsResponse.body() ?: emptyList()
                     withContext(Dispatchers.Main) {
                         questAdapter.updateQuests(questList)
+                        questsEmpty.visibility = if (questList.isEmpty()) View.VISIBLE else View.GONE
                     }
                 }
             } catch (e: Exception) {
-                Log.d("API-ERROR", e.stackTraceToString())
+                showLoadError(e)
             }
         }
     }

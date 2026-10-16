@@ -20,6 +20,7 @@ import com.example.trackmate.api.TrackService
 import com.example.trackmate.util.Vehicle
 import com.example.trackmate.util.bindVehicle
 import com.example.trackmate.util.formatTime
+import com.example.trackmate.util.showLoadError
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -116,7 +117,7 @@ class SavedTracks : Fragment() {
                     }
                 }
             } catch (e: Exception) {
-                Log.d("API-ERROR", e.stackTraceToString())
+                showLoadError(e)
             }
         }
     }

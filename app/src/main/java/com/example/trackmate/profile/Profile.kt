@@ -26,6 +26,7 @@ import com.example.trackmate.api.UserResponse
 import com.example.trackmate.posts.PostsAdapter
 import com.example.trackmate.posts.configurePostView
 import com.example.trackmate.util.showAboveKeyboard
+import com.example.trackmate.util.showLoadError
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -222,7 +223,7 @@ class Profile : Fragment() {
                     }
                 }
             } catch (e: Exception) {
-                Log.d("API-ERROR", e.stackTraceToString())
+                showLoadError(e)
             }
         }
     }

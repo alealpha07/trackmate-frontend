@@ -1,5 +1,6 @@
 package com.example.trackmate.profile
 
+import android.app.AlertDialog
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -197,6 +198,14 @@ class Friends : Fragment() {
     }
 
     private fun removeFriend(user: FriendResponse) {
+        AlertDialog.Builder(requireContext())
+            .setMessage(getString(R.string.friend_remove_confirm, user.username))
+            .setPositiveButton(R.string.friend_remove) { _, _ -> deleteFriend(user) }
+            .setNegativeButton(R.string.dialog_cancel, null)
+            .show()
+    }
+
+    private fun deleteFriend(user: FriendResponse) {
         apiCallCoroutine.launch {
             try {
                 api.removeFriend(user.id)
