@@ -19,12 +19,6 @@ The backend (API and web route planner) is in [trackmate-backend](https://github
 - Light and dark theme, in English, Italian or German, following the phone or chosen in Settings.
 - No email needed: an account is a username and a password. Download your data or delete your account in Settings.
 
-## Privacy
-
-The privacy notice and the terms of use are at
-[/privacy](https://backend.trackmate.alpha-hub.net/privacy) and [/terms](https://backend.trackmate.alpha-hub.net/terms),
-and shown inside the app from the login screen and Settings, loaded from the backend so the texts exist only there.
-
 ## Tech stack
 
 - Kotlin, Android SDK 35
