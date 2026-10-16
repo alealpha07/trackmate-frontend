@@ -180,14 +180,16 @@ class MainActivity : AppCompatActivity() {
 
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
-        // the graph starts at login, which is gone after it, so tabs pop back to home instead
+        // tabs pop back to home (login, the start, is gone) and always open on their own page
         val tabOptions = NavOptions.Builder()
             .setLaunchSingleTop(true)
-            .setRestoreState(true)
-            .setPopUpTo(R.id.home, inclusive = false, saveState = true)
+            .setPopUpTo(R.id.home, inclusive = false)
             .build()
         navView.setOnItemSelectedListener { item ->
             runCatching { navController.navigate(item.itemId, null, tabOptions) }.isSuccess
+        }
+        navView.setOnItemReselectedListener { item ->
+            runCatching { navController.navigate(item.itemId, null, tabOptions) }
         }
 
         navController.addOnDestinationChangedListener { _, destination, _ ->
