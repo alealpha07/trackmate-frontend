@@ -129,8 +129,8 @@ class TrackPlanner : Fragment() {
     private var policy = "safest"
     // changing it clears the route
     private var vehicle = Vehicle.BICYCLE
-    // safety filters on by default
-    private val filterStates = linkedMapOf("cyclewaysOnly" to true, "avoidLts4" to true, "avoidUnpaved" to false)
+    // only the detour cap is on by default
+    private val filterStates = linkedMapOf("cyclewaysOnly" to false, "avoidLts4" to false, "avoidUnpaved" to false)
     private var maxDetourIndex = MAX_DETOUR_STOPS.indexOf(25)
     private var currentRoute: PlannedRoute? = null
     private var savedTrackId: Int? = null // the current route's track, once saved
